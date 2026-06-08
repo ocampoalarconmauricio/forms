@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Examen — Ingreso</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #f5f5f7;
+      --surface:  #ffffff;
+      --border:   #d2d2d7;
+      --text:     #1d1d1f;
+      --subtle:   #6e6e73;
+      --accent:   #0071e3;
+      --accent-h: #0077ed;
+      --danger:   #ff3b30;
+      --ok:       #34c759;
+      --radius:   14px;
+      --shadow:   0 2px 20px rgba(0,0,0,.08);
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+      color: var(--text);
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      width: 420px;
+      max-width: 94vw;
+      padding: 44px 40px 40px;
+      position: relative;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: var(--text);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo-icon svg { fill: white; width: 20px; height: 20px; }
+    .logo-label { font-size: 15px; font-weight: 600; letter-spacing: -.2px; }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -.5px;
+      line-height: 1.2;
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: var(--subtle);
+      margin-bottom: 32px;
+      line-height: 1.4;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--subtle);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 6px;
+    }
+
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 15px;
+      color: var(--text);
+      background: var(--bg);
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+      margin-bottom: 20px;
+      font-family: inherit;
+    }
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,113,227,.15);
+      background: #fff;
+    }
+
+    button {
+      width: 100%;
+      padding: 13px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s, transform .1s;
+      font-family: inherit;
+    }
+    button:hover  { background: var(--accent-h); }
+    button:active { transform: scale(.99); }
+    button:disabled { background: var(--border); color: var(--subtle); cursor: default; }
+
+    /* ── Status bar (shown after register) ── */
+    #status-bar {
+      display: none;
+      margin-top: 28px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      font-size: 13px;
+    }
+    #status-bar .row {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+    }
+    #status-bar .row:last-child { margin-bottom: 0; }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+      transition: background .3s;
+    }
+    .dot.green  { background: var(--ok); box-shadow: 0 0 0 3px rgba(52,199,89,.2); }
+    .dot.red    { background: var(--danger); box-shadow: 0 0 0 3px rgba(255,59,48,.2); }
+    .dot.yellow { background: #ff9f0a; box-shadow: 0 0 0 3px rgba(255,159,10,.2); }
+
+    /* ── Tab-change warning overlay ── */
+    #warning-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(255,59,48,.07);
+      border: 3px solid var(--danger);
+      border-radius: 0;
+      z-index: 100;
+      pointer-events: none;
+    }
+    #warning-overlay.visible { display: block; }
+
+    #warning-banner {
+      display: none;
+      position: fixed;
+      top: 16px; left: 50%; transform: translateX(-50%);
+      background: var(--danger);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 200;
+      white-space: nowrap;
+      box-shadow: 0 4px 16px rgba(255,59,48,.35);
+    }
+    #warning-banner.visible { display: block; }
+  </style>
+</head>
+<body>
+
+<div id="warning-overlay"></div>
+<div id="warning-banner">⚠ Cambio de pestaña registrado</div>
+
+<div class="card">
+  <div class="logo-area">
+    <div class="logo-icon">
+      <!-- graduation cap icon -->
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zm-7 9.22V16l7 3.78 7-3.78v-3.78L12 16 5 12.22z"/>
+      </svg>
+    </div>
+    <span class="logo-label">Sistema de Examen</span>
+  </div>
+
+  <h1>Identificación</h1>
+  <p class="subtitle">Ingresá tus datos para comenzar.<br>Tu actividad será monitoreada durante la prueba.</p>
+
+  <label for="nombre">Nombre completo</label>
+  <input type="text" id="nombre" placeholder="Ej. María González" autocomplete="off" />
+
+  <label for="cedula">Número de cédula</label>
+  <input type="number" id="cedula" placeholder="Ej. 4567890" autocomplete="off" />
+
+  <button id="btn-ingresar" onclick="registrar()">Ingresar al examen</button>
+
+  <div id="status-bar">
+    <div class="row">
+      <div class="dot green" id="dot-conexion"></div>
+      <span id="txt-conexion">Conectado al servidor</span>
+    </div>
+    <div class="row">
+      <div class="dot green" id="dot-heartbeat"></div>
+      <span>Señal activa — el profesor puede verte</span>
+    </div>
+    <div class="row">
+      <div class="dot green" id="dot-pestana"></div>
+      <span id="txt-pestana">Pestaña visible</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  const socket = io();
+  let registrado = false;
+
+  // ── Registro ────────────────────────────────────────────────────
+  function registrar() {
+    const nombre = document.getElementById('nombre').value.trim();
+    const cedula = document.getElementById('cedula').value.trim();
+    if (!nombre || !cedula) { alert('Completá nombre y cédula.'); return; }
+
+    socket.emit('registrar_alumno', { nombre, cedula });
+    registrado = true;
+
+    document.getElementById('btn-ingresar').disabled = true;
+    document.getElementById('nombre').disabled = true;
+    document.getElementById('cedula').disabled = true;
+    document.getElementById('status-bar').style.display = 'block';
+
+    iniciarHeartbeat();
+  }
+
+  // ── Heartbeat cada 2 s ──────────────────────────────────────────
+  function iniciarHeartbeat() {
+    setInterval(() => {
+      if (registrado) {
+        socket.emit('heartbeat');
+        // Parpadeo visual del dot
+        const dot = document.getElementById('dot-heartbeat');
+        dot.style.background = '#fff';
+        setTimeout(() => dot.style.background = '', 200);
+      }
+    }, 2000);
+  }
+
+  // ── Page Visibility API ─────────────────────────────────────────
+  document.addEventListener('visibilitychange', () => {
+    if (!registrado) return;
+    const oculta = document.hidden;
+
+    socket.emit('cambio_pestana', { oculta });
+
+    const dot    = document.getElementById('dot-pestana');
+    const txt    = document.getElementById('txt-pestana');
+    const overlay  = document.getElementById('warning-overlay');
+    const banner   = document.getElementById('warning-banner');
+
+    if (oculta) {
+      dot.className = 'dot red';
+      txt.textContent = '⚠ Cambio de pestaña detectado';
+      overlay.classList.add('visible');
+      banner.classList.add('visible');
+    } else {
+      dot.className = 'dot green';
+      txt.textContent = 'Pestaña visible';
+      overlay.classList.remove('visible');
+      banner.classList.remove('visible');
+    }
+  });
+
+  // ── Estado conexión ─────────────────────────────────────────────
+  socket.on('disconnect', () => {
+    document.getElementById('dot-conexion').className = 'dot red';
+    document.getElementById('txt-conexion').textContent = 'Sin conexión con el servidor';
+  });
+  socket.on('connect', () => {
+    document.getElementById('dot-conexion').className = 'dot green';
+    document.getElementById('txt-conexion').textContent = 'Conectado al servidor';
+  });
+</script>
+</body>
+</html>

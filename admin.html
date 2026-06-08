@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Monitor de Examen</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #f5f5f7;
+      --surface:  #ffffff;
+      --border:   #d2d2d7;
+      --text:     #1d1d1f;
+      --subtle:   #6e6e73;
+      --accent:   #0071e3;
+      --danger:   #ff3b30;
+      --warn:     #ff9f0a;
+      --ok:       #34c759;
+      --radius:   14px;
+      --shadow:   0 2px 20px rgba(0,0,0,.08);
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+      color: var(--text);
+    }
+
+    /* ── Top bar ── */
+    header {
+      background: rgba(255,255,255,.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 50;
+      padding: 0 28px;
+      height: 52px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-left { display: flex; align-items: center; gap: 10px; }
+    .logo-icon {
+      width: 28px; height: 28px;
+      background: var(--text);
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo-icon svg { fill: white; width: 15px; height: 15px; }
+    .brand { font-size: 14px; font-weight: 700; letter-spacing: -.2px; }
+    .sub   { font-size: 13px; color: var(--subtle); }
+
+    .server-dot {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--subtle);
+    }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+
+    /* ── Main layout ── */
+    main { padding: 28px; max-width: 1100px; margin: 0 auto; }
+
+    /* ── Summary row ── */
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      box-shadow: var(--shadow);
+    }
+    .stat-card .value {
+      font-size: 32px; font-weight: 700; letter-spacing: -1px; line-height: 1;
+      margin-bottom: 4px;
+    }
+    .stat-card .label { font-size: 12px; color: var(--subtle); font-weight: 500; text-transform: uppercase; letter-spacing: .4px; }
+    .stat-card.danger .value { color: var(--danger); }
+    .stat-card.warn   .value { color: var(--warn); }
+    .stat-card.ok     .value { color: var(--ok); }
+
+    /* ── Alert banner ── */
+    #alert-banner {
+      display: none;
+      background: var(--danger);
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      animation: pulse-bg 1.5s ease-in-out infinite;
+    }
+    #alert-banner.visible { display: flex; align-items: center; gap: 10px; }
+    @keyframes pulse-bg {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: .85; }
+    }
+
+    /* ── Table ── */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .table-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .table-header h2 { font-size: 15px; font-weight: 700; }
+    .count-badge {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-size: 12px;
+      color: var(--subtle);
+      font-weight: 600;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    thead th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: var(--subtle);
+      padding: 10px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    tbody tr {
+      transition: background .15s;
+    }
+    tbody tr:hover { background: var(--bg); }
+    tbody tr + tr { border-top: 1px solid var(--border); }
+    td {
+      padding: 14px 20px;
+      font-size: 14px;
+      vertical-align: middle;
+    }
+
+    /* Estado pill */
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px; font-weight: 600;
+    }
+    .pill.ok     { background: rgba(52,199,89,.12);  color: #1a8c38; }
+    .pill.danger { background: rgba(255,59,48,.12);  color: #cc1a13; }
+    .pill.warn   { background: rgba(255,159,10,.12); color: #b36900; }
+    .pill .dot   { width: 6px; height: 6px; border-radius: 50%; }
+    .pill.ok   .dot   { background: var(--ok); }
+    .pill.danger .dot { background: var(--danger); }
+    .pill.warn   .dot { background: var(--warn); }
+
+    /* Alertas tags */
+    .alert-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+    .tag {
+      font-size: 11px; font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+    .tag.heartbeat { background: rgba(255,59,48,.1);  color: var(--danger); }
+    .tag.pestana   { background: rgba(255,159,10,.1); color: #b36900; }
+
+    /* Row highlight */
+    tbody tr.alerta-row {
+      background: rgba(255,59,48,.04);
+    }
+    tbody tr.alerta-row td:first-child {
+      border-left: 3px solid var(--danger);
+      padding-left: 17px;
+    }
+
+    /* Empty state */
+    #empty-row td {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--subtle);
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zm-7 9.22V16l7 3.78 7-3.78v-3.78L12 16 5 12.22z"/>
+      </svg>
+    </div>
+    <span class="brand">Sistema de Examen</span>
+    <span class="sub">— Panel de control</span>
+  </div>
+  <div class="server-dot">
+    <div class="dot" id="server-dot"></div>
+    <span id="server-txt">Conectado</span>
+  </div>
+</header>
+
+<main>
+  <!-- Summary -->
+  <div class="summary">
+    <div class="stat-card ok">
+      <div class="value" id="cnt-total">0</div>
+      <div class="label">Alumnos conectados</div>
+    </div>
+    <div class="stat-card ok">
+      <div class="value" id="cnt-activos">0</div>
+      <div class="label">Activos</div>
+    </div>
+    <div class="stat-card danger">
+      <div class="value" id="cnt-alertas">0</div>
+      <div class="label">Con alertas</div>
+    </div>
+  </div>
+
+  <!-- Alert banner -->
+  <div id="alert-banner">
+    <svg width="18" height="18" fill="white" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 3.5L20.5 19h-17L12 5.5zM11 10v4h2v-4h-2zm0 6v2h2v-2h-2z"/></svg>
+    <span id="alert-text"></span>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <div class="table-header">
+      <h2>Alumnos en examen</h2>
+      <span class="count-badge" id="badge-count">0 alumnos</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre completo</th>
+          <th>Cédula</th>
+          <th>Estado</th>
+          <th>Alertas</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr id="empty-row">
+          <td colspan="4">Esperando que los alumnos ingresen...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<script>
+  const socket = io();
+  socket.emit('join_admin');
+
+  socket.on('connect',    () => setServerStatus(true));
+  socket.on('disconnect', () => setServerStatus(false));
+
+  function setServerStatus(ok) {
+    document.getElementById('server-dot').style.background = ok ? 'var(--ok)' : 'var(--danger)';
+    document.getElementById('server-txt').textContent = ok ? 'Conectado' : 'Sin conexión';
+  }
+
+  socket.on('estado_alumnos', (lista) => {
+    renderTabla(lista);
+    actualizarSummary(lista);
+    actualizarAlertBanner(lista);
+  });
+
+  function renderTabla(lista) {
+    const tbody = document.getElementById('tbody');
+    const emptyRow = document.getElementById('empty-row');
+
+    if (lista.length === 0) {
+      tbody.innerHTML = '';
+      const tr = document.createElement('tr');
+      tr.id = 'empty-row';
+      tr.innerHTML = '<td colspan="4">Esperando que los alumnos ingresen...</td>';
+      tbody.appendChild(tr);
+      document.getElementById('badge-count').textContent = '0 alumnos';
+      return;
+    }
+
+    tbody.innerHTML = '';
+    document.getElementById('badge-count').textContent = `${lista.length} alumno${lista.length !== 1 ? 's' : ''}`;
+
+    lista.forEach(a => {
+      const tieneAlerta = a.alertas.length > 0 || !a.activo;
+      const tr = document.createElement('tr');
+      if (tieneAlerta) tr.classList.add('alerta-row');
+
+      // Pill de estado
+      let pillClass, pillLabel;
+      if (!a.activo) {
+        pillClass = 'danger'; pillLabel = 'Inactivo';
+      } else if (a.alertas.length > 0) {
+        pillClass = 'warn'; pillLabel = 'Activo c/alerta';
+      } else {
+        pillClass = 'ok'; pillLabel = 'Activo';
+      }
+
+      // Tags de alertas
+      const tagsHtml = a.alertas.map(al => {
+        if (al === 'sin_heartbeat') return `<span class="tag heartbeat">Sin señal</span>`;
+        if (al === 'cambio_pestana') return `<span class="tag pestana">Cambió pestaña</span>`;
+        return `<span class="tag">${al}</span>`;
+      }).join('') || '<span style="color:var(--subtle);font-size:12px">—</span>';
+
+      tr.innerHTML = `
+        <td><strong>${escHtml(a.nombre)}</strong></td>
+        <td style="color:var(--subtle);font-family:monospace;font-size:13px">${escHtml(a.cedula)}</td>
+        <td>
+          <span class="pill ${pillClass}">
+            <span class="dot"></span>${pillLabel}
+          </span>
+        </td>
+        <td><div class="alert-tags">${tagsHtml}</div></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function actualizarSummary(lista) {
+    const activos = lista.filter(a => a.activo).length;
+    const conAlerta = lista.filter(a => a.alertas.length > 0 || !a.activo).length;
+    document.getElementById('cnt-total').textContent   = lista.length;
+    document.getElementById('cnt-activos').textContent = activos;
+    document.getElementById('cnt-alertas').textContent = conAlerta;
+
+    // Cambiar color tarjeta activos
+    const cardActivos = document.getElementById('cnt-activos').closest('.stat-card');
+    cardActivos.className = 'stat-card ' + (activos === lista.length && lista.length > 0 ? 'ok' : 'warn');
+  }
+
+  function actualizarAlertBanner(lista) {
+    const banner = document.getElementById('alert-banner');
+    const alertText = document.getElementById('alert-text');
+
+    const conAlerta = lista.filter(a => a.alertas.includes('cambio_pestana') || !a.activo);
+
+    if (conAlerta.length === 0) {
+      banner.classList.remove('visible');
+      return;
+    }
+
+    banner.classList.add('visible');
+    const nombres = conAlerta.map(a => a.nombre).join(', ');
+    alertText.textContent = `Atención: ${conAlerta.length === 1 ? 'actividad sospechosa' : 'actividades sospechosas'} detectada${conAlerta.length > 1 ? 's' : ''} — ${nombres}`;
+  }
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
+</body>
+</html>
