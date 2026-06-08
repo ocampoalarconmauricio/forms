@@ -1,119 +1,200 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const fs = require('fs');
 const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Servir archivos estáticos desde la misma carpeta
-app.use(express.static(path.join(__dirname)));
+const PORT = process.env.PORT || 3000;
+const RESPONSES_FILE = path.join(__dirname, 'responses.json');
 
-// Ruta explícita para alumno y admin
-app.get('/alumno', (req, res) => res.sendFile(path.join(__dirname, 'alumno.html')));
-app.get('/admin',  (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
+// ── State ────────────────────────────────────────────────────────────────────
+const alumnos = new Map();       // socketId → { nombre, cedula, activo, alertas, respuestas }
+const admins = new Set();
+const respuestasFinales = [];    // array de respuestas completas al finalizar examen
+let examenFinalizado = false;
 
-// ── Estado en memoria ──────────────────────────────────────────────
-// alumnos[socketId] = { nombre, cedula, activo, ultimoHeartbeat, alertas[] }
-const alumnos = {};
-const HEARTBEAT_TIMEOUT = 5000; // 5 s sin heartbeat → inactivo
+// Cargar respuestas previas si existen
+if (fs.existsSync(RESPONSES_FILE)) {
+  try {
+    const data = JSON.parse(fs.readFileSync(RESPONSES_FILE, 'utf8'));
+    respuestasFinales.push(...data);
+    console.log(`Cargadas ${respuestasFinales.length} respuestas previas`);
+  } catch (_) {}
+}
 
-// ── Utilidad: notificar al admin el estado actual ──────────────────
-function broadcastEstado() {
-  const lista = Object.entries(alumnos).map(([id, a]) => ({
-    socketId: id,
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function broadcast() {
+  const lista = [...alumnos.values()].map(a => ({
     nombre: a.nombre,
     cedula: a.cedula,
     activo: a.activo,
     alertas: a.alertas,
+    progreso: a.progreso || 0,
   }));
-  io.to('admin').emit('estado_alumnos', lista);
+  io.to('admins').emit('estado_alumnos', lista);
 }
 
-// ── Watchdog: revisa heartbeats cada segundo ───────────────────────
-setInterval(() => {
-  const ahora = Date.now();
-  let cambio = false;
-  for (const id in alumnos) {
-    const a = alumnos[id];
-    const sinSenal = ahora - a.ultimoHeartbeat > HEARTBEAT_TIMEOUT;
-    if (sinSenal && a.activo) {
-      a.activo = false;
-      if (!a.alertas.includes('sin_heartbeat')) a.alertas.push('sin_heartbeat');
-      cambio = true;
-      console.log(`[WATCHDOG] ${a.nombre} → inactivo (sin heartbeat)`);
-    }
-  }
-  if (cambio) broadcastEstado();
-}, 1000);
+function guardarJSON() {
+  fs.writeFileSync(RESPONSES_FILE, JSON.stringify(respuestasFinales, null, 2), 'utf8');
+}
 
-// ── Conexiones ─────────────────────────────────────────────────────
-io.on('connection', (socket) => {
-  console.log(`[CONNECT] ${socket.id}`);
+function generarCSV(data) {
+  if (!data.length) return '';
 
-  // El admin se une a su sala privada
-  socket.on('join_admin', () => {
-    socket.join('admin');
-    console.log(`[ADMIN] panel conectado`);
-    broadcastEstado();
+  // Recopilar todas las claves de respuestas posibles
+  const respKeys = new Set();
+  data.forEach(r => {
+    if (r.respuestas) Object.keys(r.respuestas).forEach(k => respKeys.add(k));
   });
 
-  // El alumno se registra con nombre y cédula
+  const cols = ['nombre', 'cedula', 'timestamp', ...Array.from(respKeys)];
+  const header = cols.map(c => `"${c}"`).join(',');
+
+  const rows = data.map(r => {
+    return cols.map(c => {
+      let v = '';
+      if (c === 'nombre') v = r.nombre || '';
+      else if (c === 'cedula') v = r.cedula || '';
+      else if (c === 'timestamp') v = r.timestamp || '';
+      else v = r.respuestas?.[c] ?? '';
+      return `"${String(v).replace(/"/g, '""')}"`;
+    }).join(',');
+  });
+
+  return [header, ...rows].join('\n');
+}
+
+// ── Socket ───────────────────────────────────────────────────────────────────
+io.on('connection', (socket) => {
+
+  // Admin join
+  socket.on('join_admin', () => {
+    socket.join('admins');
+    admins.add(socket.id);
+    broadcast();
+    socket.emit('respuestas_guardadas', respuestasFinales.length);
+    socket.emit('examen_estado', { finalizado: examenFinalizado });
+  });
+
+  // Alumno registro
   socket.on('registrar_alumno', ({ nombre, cedula }) => {
-    alumnos[socket.id] = {
+    alumnos.set(socket.id, {
+      nombre: nombre.trim(),
+      cedula: cedula.trim(),
+      activo: true,
+      alertas: [],
+      progreso: 0,
+      lastHeartbeat: Date.now(),
+    });
+    broadcast();
+  });
+
+  // Heartbeat
+  socket.on('heartbeat', () => {
+    const a = alumnos.get(socket.id);
+    if (!a) return;
+    a.activo = true;
+    a.lastHeartbeat = Date.now();
+    a.alertas = a.alertas.filter(x => x !== 'sin_heartbeat');
+    broadcast();
+  });
+
+  // Cambio pestaña
+  socket.on('cambio_pestana', ({ oculta }) => {
+    const a = alumnos.get(socket.id);
+    if (!a) return;
+    if (oculta && !a.alertas.includes('cambio_pestana')) {
+      a.alertas.push('cambio_pestana');
+    }
+    broadcast();
+  });
+
+  // Progreso del formulario
+  socket.on('progreso', ({ pct }) => {
+    const a = alumnos.get(socket.id);
+    if (a) { a.progreso = pct; broadcast(); }
+  });
+
+  // Envío de respuestas
+  socket.on('enviar_respuestas', ({ nombre, cedula, respuestas }) => {
+    const entrada = {
       nombre,
       cedula,
-      activo: true,
-      ultimoHeartbeat: Date.now(),
-      alertas: [],
+      timestamp: new Date().toISOString(),
+      respuestas,
     };
-    console.log(`[REGISTRO] ${nombre} (${cedula})`);
-    broadcastEstado();
+    // Reemplazar si ya existe (re-envío)
+    const idx = respuestasFinales.findIndex(r => r.cedula === cedula);
+    if (idx >= 0) respuestasFinales[idx] = entrada;
+    else respuestasFinales.push(entrada);
+
+    guardarJSON();
+
+    const a = alumnos.get(socket.id);
+    if (a) { a.progreso = 100; broadcast(); }
+    io.to('admins').emit('respuestas_guardadas', respuestasFinales.length);
+    socket.emit('respuestas_confirmadas');
   });
 
-  // Heartbeat periódico del alumno
-  socket.on('heartbeat', () => {
-    if (alumnos[socket.id]) {
-      alumnos[socket.id].ultimoHeartbeat = Date.now();
-      alumnos[socket.id].activo = true;
-      // Si vuelve a estar activo, quitar alerta de heartbeat
-      alumnos[socket.id].alertas = alumnos[socket.id].alertas.filter(a => a !== 'sin_heartbeat');
-      broadcastEstado();
-    }
+  // Admin: finalizar examen
+  socket.on('finalizar_examen', () => {
+    examenFinalizado = true;
+    io.emit('examen_finalizado');
+    broadcast();
   });
 
-  // El alumno cambió de pestaña / ventana
-  socket.on('cambio_pestana', ({ oculta }) => {
-    if (alumnos[socket.id]) {
-      if (oculta) {
-        if (!alumnos[socket.id].alertas.includes('cambio_pestana'))
-          alumnos[socket.id].alertas.push('cambio_pestana');
-        console.log(`[ALERTA] ${alumnos[socket.id].nombre} cambió de pestaña`);
-      } else {
-        // Volvió a la pestaña del examen
-        alumnos[socket.id].alertas = alumnos[socket.id].alertas.filter(a => a !== 'cambio_pestana');
-      }
-      broadcastEstado();
-    }
+  // Admin: exportar CSV
+  socket.on('exportar_csv', () => {
+    const csv = generarCSV(respuestasFinales);
+    socket.emit('csv_listo', { csv, total: respuestasFinales.length });
+  });
+
+  // Admin: exportar JSON
+  socket.on('exportar_json', () => {
+    socket.emit('json_listo', { data: respuestasFinales, total: respuestasFinales.length });
   });
 
   // Desconexión
   socket.on('disconnect', () => {
-    if (alumnos[socket.id]) {
-      console.log(`[DISCONNECT] ${alumnos[socket.id].nombre}`);
-      delete alumnos[socket.id];
-      broadcastEstado();
-    } else {
-      console.log(`[DISCONNECT] ${socket.id} (sin registrar)`);
+    if (alumnos.has(socket.id)) {
+      const a = alumnos.get(socket.id);
+      a.activo = false;
+      if (!a.alertas.includes('sin_heartbeat')) a.alertas.push('sin_heartbeat');
+      // Mantener en lista pero inactivo
+      setTimeout(() => {
+        alumnos.delete(socket.id);
+        broadcast();
+      }, 30000); // borramos después de 30s
+      broadcast();
     }
+    admins.delete(socket.id);
   });
 });
 
-// ── Arrancar servidor ──────────────────────────────────────────────
-const PORT = process.env.PORT || 3000;
+// ── Heartbeat checker cada 5 s ───────────────────────────────────────────────
+setInterval(() => {
+  let changed = false;
+  alumnos.forEach((a) => {
+    if (a.activo && Date.now() - a.lastHeartbeat > 6000) {
+      a.activo = false;
+      if (!a.alertas.includes('sin_heartbeat')) { a.alertas.push('sin_heartbeat'); changed = true; }
+    }
+  });
+  if (changed) broadcast();
+}, 5000);
+
+// ── Servir archivos estáticos ─────────────────────────────────────────────────
+app.use(express.static(__dirname));
+
+// ── Rutas ─────────────────────────────────────────────────────────────────────
+app.get('/', (_, res) => res.sendFile(path.join(__dirname, 'alumno.html')));
+app.get('/admin', (_, res) => res.sendFile(path.join(__dirname, 'admin.html')));
+
 server.listen(PORT, () => {
-  console.log(`\n✅  Servidor corriendo en http://localhost:${PORT}`);
-  console.log(`   Alumno : http://localhost:${PORT}/alumno`);
-  console.log(`   Admin  : http://localhost:${PORT}/admin\n`);
+  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`Admin: http://localhost:${PORT}/admin`);
 });

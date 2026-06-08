@@ -1,286 +1,850 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Examen — Ingreso</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Evaluación del Curso</title>
   <script src="/socket.io/socket.io.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:       #f5f5f7;
-      --surface:  #ffffff;
-      --border:   #d2d2d7;
-      --text:     #1d1d1f;
-      --subtle:   #6e6e73;
-      --accent:   #0071e3;
-      --accent-h: #0077ed;
-      --danger:   #ff3b30;
-      --ok:       #34c759;
-      --radius:   14px;
-      --shadow:   0 2px 20px rgba(0,0,0,.08);
+      --bg: #f0f0f0;
+      --surface: #ffffff;
+      --border: #e0e0e0;
+      --border-strong: #c0c0c0;
+      --text: #111111;
+      --subtle: #767676;
+      --accent: #111111;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+      --radius: 10px;
     }
 
     body {
-      min-height: 100vh;
       background: var(--bg);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+      font-family: 'Inter', sans-serif;
       color: var(--text);
+      min-height: 100vh;
+      padding: 0 0 120px;
     }
 
-    /* ── Card ── */
-    .card {
+    /* ── Header ── */
+    .top-bar {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 52px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .top-bar-left { display: flex; align-items: center; gap: 10px; }
+    .logo-mark {
+      width: 26px; height: 26px;
+      background: var(--text);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo-mark svg { fill: white; width: 14px; height: 14px; }
+    .brand-name { font-size: 13px; font-weight: 700; letter-spacing: -0.3px; }
+    .top-status { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--subtle); }
+    .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+    .pulse.off { background: var(--danger); }
+
+    /* ── Progress bar ── */
+    .progress-track {
+      position: fixed; top: 52px; left: 0; right: 0; z-index: 99;
+      height: 2px; background: var(--border);
+    }
+    .progress-fill {
+      height: 100%; background: var(--text);
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+
+    /* ── Layout ── */
+    .sheet {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 40px 24px 0;
+    }
+
+    /* ── Intro card ── */
+    .intro-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      width: 420px;
-      max-width: 94vw;
-      padding: 44px 40px 40px;
+      padding: 32px;
+      margin-bottom: 8px;
+    }
+    .intro-card h1 {
+      font-size: 24px; font-weight: 700; letter-spacing: -0.8px;
+      line-height: 1.15; margin-bottom: 8px;
+    }
+    .intro-card p { font-size: 13px; color: var(--subtle); line-height: 1.55; margin-bottom: 20px; }
+
+    .field-group { margin-bottom: 16px; }
+    .field-group label {
+      display: block; font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.5px; color: var(--subtle);
+      margin-bottom: 6px;
+    }
+    .field-group input {
+      width: 100%; padding: 10px 12px;
+      border: 1px solid var(--border-strong);
+      border-radius: 8px; font-size: 14px;
+      font-family: 'Inter', sans-serif; color: var(--text);
+      background: var(--bg); outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .field-group input:focus {
+      border-color: var(--text); background: white;
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.06);
+    }
+    .field-group input:disabled { opacity: 0.5; cursor: default; }
+
+    .btn-start {
+      width: 100%; padding: 12px;
+      background: var(--text); color: white;
+      border: none; border-radius: 8px;
+      font-size: 14px; font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer; transition: opacity 0.15s;
+      letter-spacing: -0.2px;
+    }
+    .btn-start:hover { opacity: 0.85; }
+    .btn-start:disabled { opacity: 0.4; cursor: default; }
+
+    /* ── Section ── */
+    .section {
+      display: none;
+      margin-bottom: 8px;
+    }
+    .section.visible { display: block; }
+
+    .section-header {
+      padding: 28px 0 14px;
+      display: flex; align-items: baseline; gap: 10px;
+    }
+    .section-num {
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.6px;
+      color: var(--subtle);
+    }
+    .section-title {
+      font-size: 17px; font-weight: 700; letter-spacing: -0.5px;
+    }
+
+    /* ── Question block ── */
+    .q-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 4px;
+      overflow: hidden;
+    }
+    .q-block + .q-block { }
+
+    .q-label {
+      padding: 16px 20px 4px;
+      font-size: 13px; font-weight: 500;
+      letter-spacing: -0.1px;
+      line-height: 1.4;
+      color: var(--text);
+    }
+    .q-sub {
+      padding: 0 20px 12px;
+      font-size: 11px; color: var(--subtle); line-height: 1.4;
+    }
+
+    /* ── Likert scale ── */
+    .likert {
+      display: flex;
+      border-top: 1px solid var(--border);
+    }
+    .likert-opt {
+      flex: 1;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 12px 4px;
+      cursor: pointer;
+      border-right: 1px solid var(--border);
+      transition: background 0.12s;
       position: relative;
     }
-
-    .logo-area {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 32px;
-    }
-    .logo-icon {
-      width: 36px; height: 36px;
+    .likert-opt:last-child { border-right: none; }
+    .likert-opt:hover { background: #f5f5f5; }
+    .likert-opt.selected {
       background: var(--text);
-      border-radius: 9px;
-      display: flex; align-items: center; justify-content: center;
     }
-    .logo-icon svg { fill: white; width: 20px; height: 20px; }
-    .logo-label { font-size: 15px; font-weight: 600; letter-spacing: -.2px; }
-
-    h1 {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: -.5px;
+    .likert-opt.selected .opt-num { color: white; }
+    .likert-opt.selected .opt-lbl { color: rgba(255,255,255,0.65); }
+    .opt-num {
+      font-size: 16px; font-weight: 700;
+      color: var(--text); line-height: 1;
+      margin-bottom: 3px;
+    }
+    .opt-lbl {
+      font-size: 8px; font-weight: 500;
+      text-transform: uppercase; letter-spacing: 0.3px;
+      color: var(--subtle); text-align: center;
       line-height: 1.2;
-      margin-bottom: 6px;
-    }
-    .subtitle {
-      font-size: 13px;
-      color: var(--subtle);
-      margin-bottom: 32px;
-      line-height: 1.4;
     }
 
-    label {
-      display: block;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--subtle);
-      text-transform: uppercase;
-      letter-spacing: .5px;
-      margin-bottom: 6px;
-    }
+    /* Likert 2-option (Sí/No) */
+    .likert-yn .likert-opt { padding: 14px; }
+    .opt-yn { font-size: 13px; font-weight: 600; color: var(--text); }
+    .likert-opt.selected .opt-yn { color: white; }
 
-    input[type="text"], input[type="number"] {
-      width: 100%;
-      padding: 11px 14px;
+    /* ── Textarea ── */
+    .q-textarea {
+      width: 100%; padding: 14px 20px;
+      border: none; border-top: 1px solid var(--border);
+      resize: vertical; min-height: 80px;
+      font-size: 13px; font-family: 'Inter', sans-serif;
+      color: var(--text); background: transparent;
+      outline: none; line-height: 1.5;
+    }
+    .q-textarea::placeholder { color: #bbb; }
+    .q-textarea:focus { background: #fafafa; }
+
+    /* ── Section nav ── */
+    .section-nav {
+      display: flex; gap: 8px; justify-content: flex-end;
+      padding: 16px 0 0;
+    }
+    .btn-nav {
+      padding: 10px 20px; border-radius: 8px;
+      font-size: 13px; font-weight: 600;
+      font-family: 'Inter', sans-serif; cursor: pointer;
+      border: 1px solid var(--border-strong);
+      background: white; color: var(--text);
+      transition: all 0.12s; letter-spacing: -0.2px;
+    }
+    .btn-nav:hover { background: var(--bg); }
+    .btn-nav.primary {
+      background: var(--text); color: white; border-color: var(--text);
+    }
+    .btn-nav.primary:hover { opacity: 0.85; }
+
+    /* ── Submit section ── */
+    .submit-card {
+      display: none;
+      background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      font-size: 15px;
-      color: var(--text);
-      background: var(--bg);
-      outline: none;
-      transition: border-color .15s, box-shadow .15s;
-      margin-bottom: 20px;
-      font-family: inherit;
+      border-radius: var(--radius);
+      padding: 32px;
+      text-align: center;
+      margin-top: 8px;
     }
-    input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(0,113,227,.15);
-      background: #fff;
+    .submit-card.visible { display: block; }
+    .submit-card h2 { font-size: 18px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 8px; }
+    .submit-card p { font-size: 13px; color: var(--subtle); margin-bottom: 24px; }
+    .btn-submit {
+      padding: 13px 32px; background: var(--text); color: white;
+      border: none; border-radius: 8px; font-size: 14px; font-weight: 600;
+      font-family: 'Inter', sans-serif; cursor: pointer;
+      transition: opacity 0.15s; letter-spacing: -0.2px;
     }
+    .btn-submit:hover { opacity: 0.85; }
+    .btn-submit:disabled { opacity: 0.4; cursor: default; }
 
-    button {
-      width: 100%;
-      padding: 13px;
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background .15s, transform .1s;
-      font-family: inherit;
-    }
-    button:hover  { background: var(--accent-h); }
-    button:active { transform: scale(.99); }
-    button:disabled { background: var(--border); color: var(--subtle); cursor: default; }
-
-    /* ── Status bar (shown after register) ── */
-    #status-bar {
+    /* ── Success state ── */
+    .success-card {
       display: none;
-      margin-top: 28px;
-      padding: 14px 16px;
-      border-radius: 10px;
-      background: var(--bg);
+      background: var(--surface);
       border: 1px solid var(--border);
-      font-size: 13px;
+      border-radius: var(--radius);
+      padding: 48px 32px;
+      text-align: center;
+      margin-top: 8px;
     }
-    #status-bar .row {
-      display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+    .success-card.visible { display: block; }
+    .success-icon {
+      width: 48px; height: 48px;
+      background: #f0fdf4; border: 1px solid #bbf7d0;
+      border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; margin: 0 auto 16px;
     }
-    #status-bar .row:last-child { margin-bottom: 0; }
-    .dot {
-      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-      transition: background .3s;
-    }
-    .dot.green  { background: var(--ok); box-shadow: 0 0 0 3px rgba(52,199,89,.2); }
-    .dot.red    { background: var(--danger); box-shadow: 0 0 0 3px rgba(255,59,48,.2); }
-    .dot.yellow { background: #ff9f0a; box-shadow: 0 0 0 3px rgba(255,159,10,.2); }
+    .success-card h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; }
+    .success-card p { font-size: 13px; color: var(--subtle); line-height: 1.55; }
 
-    /* ── Tab-change warning overlay ── */
-    #warning-overlay {
+    /* ── Examen finalizado overlay ── */
+    #finalizado-overlay {
       display: none;
-      position: fixed; inset: 0;
-      background: rgba(255,59,48,.07);
-      border: 3px solid var(--danger);
-      border-radius: 0;
-      z-index: 100;
-      pointer-events: none;
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(6px);
+      align-items: center; justify-content: center;
     }
-    #warning-overlay.visible { display: block; }
+    #finalizado-overlay.visible { display: flex; }
+    .finalizado-box {
+      background: white; border-radius: var(--radius);
+      padding: 40px; text-align: center; max-width: 380px;
+    }
+    .finalizado-box h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.6px; margin-bottom: 8px; }
+    .finalizado-box p { font-size: 13px; color: var(--subtle); line-height: 1.5; }
 
-    #warning-banner {
+    /* ── Warning banner ── */
+    #warn-banner {
       display: none;
-      position: fixed;
-      top: 16px; left: 50%; transform: translateX(-50%);
-      background: var(--danger);
-      color: #fff;
-      padding: 10px 20px;
-      border-radius: 30px;
-      font-size: 13px;
-      font-weight: 600;
-      z-index: 200;
+      position: fixed; top: 60px; left: 50%; transform: translateX(-50%);
+      background: var(--danger); color: white;
+      padding: 8px 18px; border-radius: 20px;
+      font-size: 12px; font-weight: 600; z-index: 200;
+      box-shadow: 0 4px 16px rgba(239,68,68,0.3);
       white-space: nowrap;
-      box-shadow: 0 4px 16px rgba(255,59,48,.35);
     }
-    #warning-banner.visible { display: block; }
+    #warn-banner.visible { display: block; }
+
+    /* ── Sticky status dots (pequeños) ── */
+    .status-dots {
+      display: flex; gap: 5px; align-items: center;
+    }
+    .sdot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--ok); transition: background 0.3s;
+    }
+    .sdot.off { background: var(--danger); }
+    .sdot.warn { background: var(--warn); }
+
+    @media (max-width: 500px) {
+      .sheet { padding: 28px 16px 0; }
+      .intro-card, .submit-card { padding: 24px 20px; }
+      .q-label { padding: 14px 16px 4px; }
+      .q-sub { padding: 0 16px 10px; }
+      .q-textarea { padding: 12px 16px; }
+      .opt-lbl { display: none; }
+    }
   </style>
 </head>
 <body>
 
-<div id="warning-overlay"></div>
-<div id="warning-banner">⚠ Cambio de pestaña registrado</div>
-
-<div class="card">
-  <div class="logo-area">
-    <div class="logo-icon">
-      <!-- graduation cap icon -->
-      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zm-7 9.22V16l7 3.78 7-3.78v-3.78L12 16 5 12.22z"/>
-      </svg>
-    </div>
-    <span class="logo-label">Sistema de Examen</span>
-  </div>
-
-  <h1>Identificación</h1>
-  <p class="subtitle">Ingresá tus datos para comenzar.<br>Tu actividad será monitoreada durante la prueba.</p>
-
-  <label for="nombre">Nombre completo</label>
-  <input type="text" id="nombre" placeholder="Ej. María González" autocomplete="off" />
-
-  <label for="cedula">Número de cédula</label>
-  <input type="number" id="cedula" placeholder="Ej. 4567890" autocomplete="off" />
-
-  <button id="btn-ingresar" onclick="registrar()">Ingresar al examen</button>
-
-  <div id="status-bar">
-    <div class="row">
-      <div class="dot green" id="dot-conexion"></div>
-      <span id="txt-conexion">Conectado al servidor</span>
-    </div>
-    <div class="row">
-      <div class="dot green" id="dot-heartbeat"></div>
-      <span>Señal activa — el profesor puede verte</span>
-    </div>
-    <div class="row">
-      <div class="dot green" id="dot-pestana"></div>
-      <span id="txt-pestana">Pestaña visible</span>
-    </div>
+<div id="warn-banner">⚠ Cambio de pestaña registrado</div>
+<div id="finalizado-overlay">
+  <div class="finalizado-box">
+    <div style="font-size:32px;margin-bottom:12px">⏱</div>
+    <h2>Examen finalizado</h2>
+    <p>El profesor cerró el examen. Si completaste el formulario, tus respuestas ya fueron guardadas.</p>
   </div>
 </div>
 
+<div class="top-bar">
+  <div class="top-bar-left">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zm-7 9.22V16l7 3.78 7-3.78v-3.78L12 16 5 12.22z"/></svg>
+    </div>
+    <span class="brand-name">Estado del Curso</span>
+  </div>
+  <div class="top-status">
+    <div class="status-dots">
+      <div class="sdot" id="sdot-conn" title="Conexión"></div>
+      <div class="sdot" id="sdot-hb" title="Señal activa"></div>
+      <div class="sdot" id="sdot-tab" title="Pestaña"></div>
+    </div>
+    <span id="status-txt">Conectado</span>
+  </div>
+</div>
+
+<div class="progress-track">
+  <div class="progress-fill" id="progress-fill"></div>
+</div>
+
+<div class="sheet">
+
+  <!-- ── INTRO / LOGIN ── -->
+  <div class="intro-card" id="intro-card">
+    <h1>Evaluación del<br>estado del curso</h1>
+    <p>Mesa directiva · Uso interno.<br>Completá nombre y cédula para comenzar. Tu actividad es monitoreada durante la evaluación.</p>
+    <div class="field-group">
+      <label for="nombre">Nombre completo</label>
+      <input type="text" id="nombre" placeholder="Ej. María González" autocomplete="off"/>
+    </div>
+    <div class="field-group">
+      <label for="cedula">Número de cédula</label>
+      <input type="text" id="cedula" placeholder="Ej. 4.567.890" autocomplete="off"/>
+    </div>
+    <button class="btn-start" id="btn-start" onclick="iniciar()">Comenzar evaluación</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       PARTE I — RENDIMIENTO ACADÉMICO
+  ════════════════════════════════════════════════════ -->
+  <div class="section" id="sec-1">
+    <div class="section-header">
+      <span class="section-num">Parte I</span>
+      <span class="section-title">Rendimiento académico</span>
+    </div>
+
+    <!-- Pregunta global -->
+    <div class="q-block">
+      <div class="q-label">¿Cómo evaluás tu rendimiento general este período?</div>
+      <div class="likert" id="lk-rendimiento-general">
+        <div class="likert-opt" onclick="selLikert('rendimiento_general',1,this)"><span class="opt-num">1</span><span class="opt-lbl">Muy malo</span></div>
+        <div class="likert-opt" onclick="selLikert('rendimiento_general',2,this)"><span class="opt-num">2</span><span class="opt-lbl">Malo</span></div>
+        <div class="likert-opt" onclick="selLikert('rendimiento_general',3,this)"><span class="opt-num">3</span><span class="opt-lbl">Regular</span></div>
+        <div class="likert-opt" onclick="selLikert('rendimiento_general',4,this)"><span class="opt-num">4</span><span class="opt-lbl">Bueno</span></div>
+        <div class="likert-opt" onclick="selLikert('rendimiento_general',5,this)"><span class="opt-num">5</span><span class="opt-lbl">Excelente</span></div>
+      </div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">¿Con qué frecuencia estudiás o repasás los contenidos fuera del aula?</div>
+      <div class="likert" id="lk-estudio-frecuencia">
+        <div class="likert-opt" onclick="selLikert('estudio_frecuencia',1,this)"><span class="opt-num">1</span><span class="opt-lbl">Nunca</span></div>
+        <div class="likert-opt" onclick="selLikert('estudio_frecuencia',2,this)"><span class="opt-num">2</span><span class="opt-lbl">Rara vez</span></div>
+        <div class="likert-opt" onclick="selLikert('estudio_frecuencia',3,this)"><span class="opt-num">3</span><span class="opt-lbl">A veces</span></div>
+        <div class="likert-opt" onclick="selLikert('estudio_frecuencia',4,this)"><span class="opt-num">4</span><span class="opt-lbl">Seguido</span></div>
+        <div class="likert-opt" onclick="selLikert('estudio_frecuencia',5,this)"><span class="opt-num">5</span><span class="opt-lbl">Siempre</span></div>
+      </div>
+    </div>
+
+    <!-- Materias dinámicas generadas via JS -->
+    <div id="materias-container"></div>
+
+    <div class="q-block">
+      <div class="q-label">Observaciones académicas generales</div>
+      <textarea class="q-textarea" id="obs-academico" placeholder="Sugerencias de mejora, dificultades, fortalezas…" rows="3" oninput="guardarTexto('obs_academico',this.value)"></textarea>
+    </div>
+
+    <div class="section-nav">
+      <button class="btn-nav primary" onclick="irSeccion(2)">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       PARTE II — CONVIVENCIA
+  ════════════════════════════════════════════════════ -->
+  <div class="section" id="sec-2">
+    <div class="section-header">
+      <span class="section-num">Parte II</span>
+      <span class="section-title">Convivencia</span>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">¿Cómo calificás el clima general de convivencia en el curso?</div>
+      <div class="likert">
+        <div class="likert-opt" onclick="selLikert('convivencia_clima',1,this)"><span class="opt-num">1</span><span class="opt-lbl">Muy malo</span></div>
+        <div class="likert-opt" onclick="selLikert('convivencia_clima',2,this)"><span class="opt-num">2</span><span class="opt-lbl">Malo</span></div>
+        <div class="likert-opt" onclick="selLikert('convivencia_clima',3,this)"><span class="opt-num">3</span><span class="opt-lbl">Regular</span></div>
+        <div class="likert-opt" onclick="selLikert('convivencia_clima',4,this)"><span class="opt-num">4</span><span class="opt-lbl">Bueno</span></div>
+        <div class="likert-opt" onclick="selLikert('convivencia_clima',5,this)"><span class="opt-num">5</span><span class="opt-lbl">Excelente</span></div>
+      </div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">¿Se respetan los acuerdos de convivencia del curso?</div>
+      <div class="likert">
+        <div class="likert-opt" onclick="selLikert('convivencia_acuerdos',1,this)"><span class="opt-num">1</span><span class="opt-lbl">Nunca</span></div>
+        <div class="likert-opt" onclick="selLikert('convivencia_acuerdos',2,this)"><span class="opt-num">2</span><span class="opt-lbl">Poco</span></div>
+        <div class="likert-opt" onclick="selLikert('convivencia_acuerdos',3,this)"><span class="opt-num">3</span><span class="opt-lbl">A veces</span></div>
+        <div class="likert-opt" onclick="selLikert('convivencia_acuerdos',4,this)"><span class="opt-num">4</span><span class="opt-lbl">Seguido</span></div>
+        <div class="likert-opt" onclick="selLikert('convivencia_acuerdos',5,this)"><span class="opt-num">5</span><span class="opt-lbl">Siempre</span></div>
+      </div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">¿Hubo situaciones de conflicto entre compañeros este período?</div>
+      <div class="likert likert-yn">
+        <div class="likert-opt" onclick="selLikert('conflicto_compañeros','si',this)"><span class="opt-yn">Sí</span></div>
+        <div class="likert-opt" onclick="selLikert('conflicto_compañeros','no',this)"><span class="opt-yn">No</span></div>
+      </div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">¿Quién tuvo un gesto positivo o te ayudó este mes?</div>
+      <textarea class="q-textarea" id="conv-positivo" placeholder="Nombrá a quien quieras destacar…" rows="2" oninput="guardarTexto('convivencia_positivo',this.value)"></textarea>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">¿Tuviste algún inconveniente con un compañero?</div>
+      <div class="q-sub">Opcional · Anónimo para tus compañeros — solo lo ve la mesa directiva.</div>
+      <textarea class="q-textarea" id="conv-conflicto" placeholder="Describí brevemente la situación…" rows="3" oninput="guardarTexto('convivencia_conflicto',this.value)"></textarea>
+    </div>
+
+    <div class="section-nav">
+      <button class="btn-nav" onclick="irSeccion(1)">← Anterior</button>
+      <button class="btn-nav primary" onclick="irSeccion(3)">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       PARTE III — COMITÉS
+  ════════════════════════════════════════════════════ -->
+  <div class="section" id="sec-3">
+    <div class="section-header">
+      <span class="section-num">Parte III</span>
+      <span class="section-title">Comités</span>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">En general, ¿los comités están cumpliendo sus propuestas?</div>
+      <div class="likert">
+        <div class="likert-opt" onclick="selLikert('comites_general',1,this)"><span class="opt-num">1</span><span class="opt-lbl">Para nada</span></div>
+        <div class="likert-opt" onclick="selLikert('comites_general',2,this)"><span class="opt-num">2</span><span class="opt-lbl">Poco</span></div>
+        <div class="likert-opt" onclick="selLikert('comites_general',3,this)"><span class="opt-num">3</span><span class="opt-lbl">Regular</span></div>
+        <div class="likert-opt" onclick="selLikert('comites_general',4,this)"><span class="opt-num">4</span><span class="opt-lbl">Bastante</span></div>
+        <div class="likert-opt" onclick="selLikert('comites_general',5,this)"><span class="opt-num">5</span><span class="opt-lbl">Totalmente</span></div>
+      </div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">¿Participás activamente en el comité al que pertenecés?</div>
+      <div class="likert">
+        <div class="likert-opt" onclick="selLikert('comite_participacion',1,this)"><span class="opt-num">1</span><span class="opt-lbl">Nada</span></div>
+        <div class="likert-opt" onclick="selLikert('comite_participacion',2,this)"><span class="opt-num">2</span><span class="opt-lbl">Poco</span></div>
+        <div class="likert-opt" onclick="selLikert('comite_participacion',3,this)"><span class="opt-num">3</span><span class="opt-lbl">A veces</span></div>
+        <div class="likert-opt" onclick="selLikert('comite_participacion',4,this)"><span class="opt-num">4</span><span class="opt-lbl">Seguido</span></div>
+        <div class="likert-opt" onclick="selLikert('comite_participacion',5,this)"><span class="opt-num">5</span><span class="opt-lbl">Siempre</span></div>
+      </div>
+    </div>
+
+    <!-- Comités individuales generados via JS -->
+    <div id="comites-container"></div>
+
+    <div class="section-nav">
+      <button class="btn-nav" onclick="irSeccion(2)">← Anterior</button>
+      <button class="btn-nav primary" onclick="irSeccion(4)">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       PARTE IV — MESA DIRECTIVA
+  ════════════════════════════════════════════════════ -->
+  <div class="section" id="sec-4">
+    <div class="section-header">
+      <span class="section-num">Parte IV</span>
+      <span class="section-title">Mesa directiva</span>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">¿Cómo evaluás el desempeño general de la mesa directiva?</div>
+      <div class="likert">
+        <div class="likert-opt" onclick="selLikert('mesa_general',1,this)"><span class="opt-num">1</span><span class="opt-lbl">Muy malo</span></div>
+        <div class="likert-opt" onclick="selLikert('mesa_general',2,this)"><span class="opt-num">2</span><span class="opt-lbl">Malo</span></div>
+        <div class="likert-opt" onclick="selLikert('mesa_general',3,this)"><span class="opt-num">3</span><span class="opt-lbl">Regular</span></div>
+        <div class="likert-opt" onclick="selLikert('mesa_general',4,this)"><span class="opt-num">4</span><span class="opt-lbl">Bueno</span></div>
+        <div class="likert-opt" onclick="selLikert('mesa_general',5,this)"><span class="opt-num">5</span><span class="opt-lbl">Excelente</span></div>
+      </div>
+    </div>
+
+    <!-- Roles individuales generados via JS -->
+    <div id="mesa-container"></div>
+
+    <div class="section-nav">
+      <button class="btn-nav" onclick="irSeccion(3)">← Anterior</button>
+      <button class="btn-nav primary" onclick="irSeccion(5)">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       PARTE V — CUOTAS Y RECURSOS
+  ════════════════════════════════════════════════════ -->
+  <div class="section" id="sec-5">
+    <div class="section-header">
+      <span class="section-num">Parte V</span>
+      <span class="section-title">Cuotas y recursos</span>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">¿Estás al día con el pago de cuotas?</div>
+      <div class="likert likert-yn">
+        <div class="likert-opt" onclick="selLikert('cuota_al_dia','si',this)"><span class="opt-yn">Sí</span></div>
+        <div class="likert-opt" onclick="selLikert('cuota_al_dia','no',this)"><span class="opt-yn">No</span></div>
+      </div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">¿El manejo de los recursos del curso es transparente?</div>
+      <div class="likert">
+        <div class="likert-opt" onclick="selLikert('recursos_transparencia',1,this)"><span class="opt-num">1</span><span class="opt-lbl">Nada</span></div>
+        <div class="likert-opt" onclick="selLikert('recursos_transparencia',2,this)"><span class="opt-num">2</span><span class="opt-lbl">Poco</span></div>
+        <div class="likert-opt" onclick="selLikert('recursos_transparencia',3,this)"><span class="opt-num">3</span><span class="opt-lbl">Regular</span></div>
+        <div class="likert-opt" onclick="selLikert('recursos_transparencia',4,this)"><span class="opt-num">4</span><span class="opt-lbl">Bastante</span></div>
+        <div class="likert-opt" onclick="selLikert('recursos_transparencia',5,this)"><span class="opt-num">5</span><span class="opt-lbl">Totalmente</span></div>
+      </div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">¿Usás emca.web.app?</div>
+      <div class="likert likert-yn">
+        <div class="likert-opt" onclick="selLikert('usa_emca','si',this)"><span class="opt-yn">Sí</span></div>
+        <div class="likert-opt" onclick="selLikert('usa_emca','no',this)"><span class="opt-yn">No</span></div>
+      </div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">¿Qué herramienta de emca.web.app usás más?</div>
+      <textarea class="q-textarea" id="emca-herramienta" placeholder="Recursos académicos, notas, noticias…" rows="2" oninput="guardarTexto('emca_herramienta',this.value)"></textarea>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">¿Qué actualización o página nueva querrías?</div>
+      <textarea class="q-textarea" id="emca-sugerencia" placeholder="Tu sugerencia para la plataforma…" rows="2" oninput="guardarTexto('emca_sugerencia',this.value)"></textarea>
+    </div>
+
+    <div class="section-nav">
+      <button class="btn-nav" onclick="irSeccion(4)">← Anterior</button>
+      <button class="btn-nav primary" onclick="irSeccion(6)">Siguiente →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       PARTE VI — COMPROMISOS PERSONALES
+  ════════════════════════════════════════════════════ -->
+  <div class="section" id="sec-6">
+    <div class="section-header">
+      <span class="section-num">Parte VI</span>
+      <span class="section-title">Compromisos personales</span>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">¿Cuánto te comprometés con la vida del curso?</div>
+      <div class="likert">
+        <div class="likert-opt" onclick="selLikert('compromiso_curso',1,this)"><span class="opt-num">1</span><span class="opt-lbl">Nada</span></div>
+        <div class="likert-opt" onclick="selLikert('compromiso_curso',2,this)"><span class="opt-num">2</span><span class="opt-lbl">Poco</span></div>
+        <div class="likert-opt" onclick="selLikert('compromiso_curso',3,this)"><span class="opt-num">3</span><span class="opt-lbl">Algo</span></div>
+        <div class="likert-opt" onclick="selLikert('compromiso_curso',4,this)"><span class="opt-num">4</span><span class="opt-lbl">Bastante</span></div>
+        <div class="likert-opt" onclick="selLikert('compromiso_curso',5,this)"><span class="opt-num">5</span><span class="opt-lbl">Mucho</span></div>
+      </div>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">Cosas que me comprometo a mejorar</div>
+      <div class="q-sub">Ej: guardar el celular, ser puntual, no salir de clase, tratar mejor a mis compañeros…</div>
+      <textarea class="q-textarea" id="compromisos-texto" placeholder="Escribí tus compromisos personales…" rows="5" oninput="guardarTexto('compromisos_personales',this.value)"></textarea>
+    </div>
+
+    <div class="q-block">
+      <div class="q-label">¿Algo más que quieras decirle a la mesa directiva?</div>
+      <textarea class="q-textarea" id="comentario-final" placeholder="Comentario libre…" rows="3" oninput="guardarTexto('comentario_final',this.value)"></textarea>
+    </div>
+
+    <div class="section-nav">
+      <button class="btn-nav" onclick="irSeccion(5)">← Anterior</button>
+      <button class="btn-nav primary" onclick="irEnvio()">Revisar y enviar →</button>
+    </div>
+  </div>
+
+  <!-- ── Submit ── -->
+  <div class="submit-card" id="submit-card">
+    <h2>Todo listo</h2>
+    <p>Revisaste todas las secciones. Al enviar, tus respuestas quedan guardadas y el profesor puede verlas.</p>
+    <button class="btn-submit" id="btn-submit" onclick="enviar()">Enviar evaluación</button>
+  </div>
+
+  <!-- ── Success ── -->
+  <div class="success-card" id="success-card">
+    <div class="success-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    </div>
+    <h2>Evaluación enviada</h2>
+    <p>Tus respuestas fueron recibidas correctamente. Podés cerrar esta pestaña.</p>
+  </div>
+
+</div><!-- /sheet -->
+
 <script>
-  const socket = io();
-  let registrado = false;
+const socket = io();
+let registrado = false;
+let nombre = '', cedula = '';
+let seccionActual = 0;
+const totalSecciones = 6;
+const respuestas = {};
 
-  // ── Registro ────────────────────────────────────────────────────
-  function registrar() {
-    const nombre = document.getElementById('nombre').value.trim();
-    const cedula = document.getElementById('cedula').value.trim();
-    if (!nombre || !cedula) { alert('Completá nombre y cédula.'); return; }
+// ── Datos estáticos (se pueden reemplazar con carga desde Supabase) ───────────
+const MATERIAS = [
+  'Matemáticas','Lengua y Literatura','Historia','Geografía',
+  'Biología','Química','Física','Inglés','Ed. Física','Filosofía'
+];
+const COMITES = [
+  'Cultura y Arte','Deportes','Medio Ambiente','Tecnología','Solidaridad'
+];
+const ROLES_MESA = [
+  { rol: 'Delegado', titular: '' },
+  { rol: 'Vicedelegado', titular: '' },
+  { rol: 'Secretario', titular: '' },
+  { rol: 'Tesorero', titular: '' },
+];
 
-    socket.emit('registrar_alumno', { nombre, cedula });
-    registrado = true;
+// ── Generar bloques dinámicos ─────────────────────────────────────────────────
+function generarMaterias() {
+  const c = document.getElementById('materias-container');
+  MATERIAS.forEach(m => {
+    const key = 'materia_' + m.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+    c.innerHTML += `
+      <div class="q-block">
+        <div class="q-label">${m}</div>
+        <div class="q-sub">¿Qué tan dificultosa te resulta esta materia?</div>
+        <div class="likert">
+          ${[1,2,3,4,5].map(n=>`<div class="likert-opt" onclick="selLikert('${key}',${n},this)"><span class="opt-num">${n}</span><span class="opt-lbl">${['Muy fácil','Fácil','Normal','Difícil','Muy difícil'][n-1]}</span></div>`).join('')}
+        </div>
+      </div>`;
+  });
+}
 
-    document.getElementById('btn-ingresar').disabled = true;
-    document.getElementById('nombre').disabled = true;
-    document.getElementById('cedula').disabled = true;
-    document.getElementById('status-bar').style.display = 'block';
+function generarComites() {
+  const c = document.getElementById('comites-container');
+  COMITES.forEach(com => {
+    const key = 'comite_' + com.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+    c.innerHTML += `
+      <div class="q-block">
+        <div class="q-label">Comité de ${com}</div>
+        <div class="q-sub">¿Qué tan bien está cumpliendo sus propuestas?</div>
+        <div class="likert">
+          ${[1,2,3,4,5].map(n=>`<div class="likert-opt" onclick="selLikert('${key}',${n},this)"><span class="opt-num">${n}</span><span class="opt-lbl">${['Para nada','Poco','Regular','Bastante','Totalmente'][n-1]}</span></div>`).join('')}
+        </div>
+      </div>`;
+  });
+}
 
-    iniciarHeartbeat();
+function generarMesa() {
+  const c = document.getElementById('mesa-container');
+  ROLES_MESA.forEach(({ rol, titular }) => {
+    const key = 'mesa_' + rol.toLowerCase();
+    const sub = titular ? `Titular: ${titular}` : '';
+    c.innerHTML += `
+      <div class="q-block">
+        <div class="q-label">${rol}</div>
+        ${sub ? `<div class="q-sub">${sub}</div>` : ''}
+        <div class="likert">
+          ${[1,2,3,4,5].map(n=>`<div class="likert-opt" onclick="selLikert('${key}',${n},this)"><span class="opt-num">${n}</span><span class="opt-lbl">${['Muy malo','Malo','Regular','Bueno','Excelente'][n-1]}</span></div>`).join('')}
+        </div>
+      </div>
+      <div class="q-block">
+        <div class="q-label">Opinión sobre el ${rol}</div>
+        <textarea class="q-textarea" placeholder="Comentario libre sobre su desempeño…" rows="2" oninput="guardarTexto('${key}_opinion',this.value)"></textarea>
+      </div>`;
+  });
+}
+
+// ── Inicialización ────────────────────────────────────────────────────────────
+generarMaterias();
+generarComites();
+generarMesa();
+
+// ── Registro ──────────────────────────────────────────────────────────────────
+function iniciar() {
+  nombre = document.getElementById('nombre').value.trim();
+  cedula = document.getElementById('cedula').value.trim();
+  if (!nombre || !cedula) { alert('Completá nombre y cédula.'); return; }
+
+  socket.emit('registrar_alumno', { nombre, cedula });
+  registrado = true;
+
+  document.getElementById('btn-start').disabled = true;
+  document.getElementById('nombre').disabled = true;
+  document.getElementById('cedula').disabled = true;
+
+  iniciarHeartbeat();
+  irSeccion(1);
+}
+
+// ── Navegación entre secciones ────────────────────────────────────────────────
+function irSeccion(n) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
+  document.getElementById('submit-card').classList.remove('visible');
+  document.getElementById('success-card').classList.remove('visible');
+
+  const sec = document.getElementById('sec-' + n);
+  if (sec) {
+    sec.classList.add('visible');
+    seccionActual = n;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    actualizarProgreso();
   }
+}
 
-  // ── Heartbeat cada 2 s ──────────────────────────────────────────
-  function iniciarHeartbeat() {
-    setInterval(() => {
-      if (registrado) {
-        socket.emit('heartbeat');
-        // Parpadeo visual del dot
-        const dot = document.getElementById('dot-heartbeat');
-        dot.style.background = '#fff';
-        setTimeout(() => dot.style.background = '', 200);
-      }
-    }, 2000);
-  }
+function irEnvio() {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
+  document.getElementById('submit-card').classList.add('visible');
+  seccionActual = totalSecciones + 1;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  actualizarProgreso();
+}
 
-  // ── Page Visibility API ─────────────────────────────────────────
-  document.addEventListener('visibilitychange', () => {
-    if (!registrado) return;
-    const oculta = document.hidden;
+function actualizarProgreso() {
+  const pct = Math.round((seccionActual / (totalSecciones + 1)) * 100);
+  document.getElementById('progress-fill').style.width = pct + '%';
+  if (registrado) socket.emit('progreso', { pct });
+}
 
-    socket.emit('cambio_pestana', { oculta });
+// ── Likert helper ─────────────────────────────────────────────────────────────
+function selLikert(key, val, el) {
+  const grupo = el.closest('.likert');
+  grupo.querySelectorAll('.likert-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  respuestas[key] = val;
+}
 
-    const dot    = document.getElementById('dot-pestana');
-    const txt    = document.getElementById('txt-pestana');
-    const overlay  = document.getElementById('warning-overlay');
-    const banner   = document.getElementById('warning-banner');
+function guardarTexto(key, val) {
+  respuestas[key] = val;
+}
 
-    if (oculta) {
-      dot.className = 'dot red';
-      txt.textContent = '⚠ Cambio de pestaña detectado';
-      overlay.classList.add('visible');
-      banner.classList.add('visible');
-    } else {
-      dot.className = 'dot green';
-      txt.textContent = 'Pestaña visible';
-      overlay.classList.remove('visible');
-      banner.classList.remove('visible');
+// ── Heartbeat ─────────────────────────────────────────────────────────────────
+function iniciarHeartbeat() {
+  setInterval(() => {
+    if (registrado) {
+      socket.emit('heartbeat');
+      const d = document.getElementById('sdot-hb');
+      d.style.opacity = '0.3';
+      setTimeout(() => d.style.opacity = '', 200);
     }
-  });
+  }, 2000);
+}
 
-  // ── Estado conexión ─────────────────────────────────────────────
-  socket.on('disconnect', () => {
-    document.getElementById('dot-conexion').className = 'dot red';
-    document.getElementById('txt-conexion').textContent = 'Sin conexión con el servidor';
-  });
-  socket.on('connect', () => {
-    document.getElementById('dot-conexion').className = 'dot green';
-    document.getElementById('txt-conexion').textContent = 'Conectado al servidor';
-  });
+// ── Visibilidad de pestaña ────────────────────────────────────────────────────
+document.addEventListener('visibilitychange', () => {
+  if (!registrado) return;
+  const oculta = document.hidden;
+  socket.emit('cambio_pestana', { oculta });
+
+  const dot = document.getElementById('sdot-tab');
+  const banner = document.getElementById('warn-banner');
+  if (oculta) {
+    dot.classList.add('warn');
+    banner.classList.add('visible');
+  } else {
+    dot.classList.remove('warn');
+    banner.classList.remove('visible');
+  }
+});
+
+// ── Envío ─────────────────────────────────────────────────────────────────────
+function enviar() {
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.textContent = 'Enviando…';
+  socket.emit('enviar_respuestas', { nombre, cedula, respuestas });
+}
+
+socket.on('respuestas_confirmadas', () => {
+  document.getElementById('submit-card').classList.remove('visible');
+  document.getElementById('success-card').classList.add('visible');
+  document.getElementById('progress-fill').style.width = '100%';
+  registrado = false; // detener heartbeat
+});
+
+// ── Conexión ──────────────────────────────────────────────────────────────────
+socket.on('connect', () => {
+  document.getElementById('sdot-conn').classList.remove('off');
+  document.getElementById('status-txt').textContent = 'Conectado';
+});
+socket.on('disconnect', () => {
+  document.getElementById('sdot-conn').classList.add('off');
+  document.getElementById('status-txt').textContent = 'Sin conexión';
+});
+
+// ── Examen finalizado ─────────────────────────────────────────────────────────
+socket.on('examen_finalizado', () => {
+  document.getElementById('finalizado-overlay').classList.add('visible');
+  registrado = false;
+});
 </script>
 </body>
 </html>
