@@ -82,11 +82,17 @@ io.on('connection', (socket) => {
 
   // Alumno registro
   socket.on('registrar_alumno', ({ nombre, cedula }) => {
+    // Si ya existe una entrada con la misma cédula (reconexión), borrarla
+    for (const [sid, a] of alumnos.entries()) {
+      if (a.cedula === cedula.trim() && sid !== socket.id) {
+        alumnos.delete(sid);
+      }
+    }
     alumnos.set(socket.id, {
       nombre: nombre.trim(),
       cedula: cedula.trim(),
       activo: true,
-      alertas: [],
+      alertas: [],       // siempre arranca limpio al reconectar
       progreso: 0,
       lastHeartbeat: Date.now(),
     });
