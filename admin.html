@@ -3,367 +3,825 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin — Monitor de Examen</title>
+  <title>Admin — Monitor de Evaluación</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:       #f5f5f7;
-      --surface:  #ffffff;
-      --border:   #d2d2d7;
-      --text:     #1d1d1f;
-      --subtle:   #6e6e73;
-      --accent:   #0071e3;
-      --danger:   #ff3b30;
-      --warn:     #ff9f0a;
-      --ok:       #34c759;
-      --radius:   14px;
-      --shadow:   0 2px 20px rgba(0,0,0,.08);
+      --bg:      #f0f0f0;
+      --surface: #ffffff;
+      --border:  #e0e0e0;
+      --border-strong: #c8c8c8;
+      --text:    #111111;
+      --subtle:  #767676;
+      --accent:  #111111;
+      --danger:  #ef4444;
+      --warn:    #f59e0b;
+      --ok:      #22c55e;
+      --radius:  10px;
     }
 
     body {
       min-height: 100vh;
       background: var(--bg);
-      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Inter', sans-serif;
       color: var(--text);
     }
 
     /* ── Top bar ── */
     header {
-      background: rgba(255,255,255,.85);
+      background: rgba(255,255,255,.92);
       backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
-      position: sticky; top: 0; z-index: 50;
-      padding: 0 28px;
+      position: sticky; top: 0; z-index: 100;
       height: 52px;
-      display: flex; align-items: center; justify-content: space-between;
+      display: flex; align-items: center;
+      padding: 0 24px; gap: 0;
     }
-    .header-left { display: flex; align-items: center; gap: 10px; }
-    .logo-icon {
-      width: 28px; height: 28px;
-      background: var(--text);
-      border-radius: 7px;
+    .header-brand { display: flex; align-items: center; gap: 10px; }
+    .logo-mark {
+      width: 26px; height: 26px;
+      background: var(--text); border-radius: 6px;
       display: flex; align-items: center; justify-content: center;
     }
-    .logo-icon svg { fill: white; width: 15px; height: 15px; }
-    .brand { font-size: 14px; font-weight: 700; letter-spacing: -.2px; }
-    .sub   { font-size: 13px; color: var(--subtle); }
+    .logo-mark svg { fill: white; width: 14px; height: 14px; }
+    .brand-name { font-size: 13px; font-weight: 700; letter-spacing: -0.3px; }
+    .brand-sub  { font-size: 12px; color: var(--subtle); margin-left: 6px; }
+
+    /* tab nav in header */
+    .header-tabs {
+      display: flex; align-items: center; gap: 2px;
+      margin-left: auto;
+    }
+    .tab-btn {
+      padding: 6px 14px; border-radius: 7px;
+      font-size: 12px; font-weight: 600;
+      border: none; cursor: pointer;
+      background: transparent; color: var(--subtle);
+      transition: all 0.15s;
+    }
+    .tab-btn:hover { background: var(--bg); color: var(--text); }
+    .tab-btn.active { background: var(--text); color: white; }
 
     .server-dot {
       display: flex; align-items: center; gap: 6px;
-      font-size: 12px; color: var(--subtle);
+      font-size: 11px; color: var(--subtle);
+      margin-left: 16px;
     }
     .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
 
-    /* ── Main layout ── */
-    main { padding: 28px; max-width: 1100px; margin: 0 auto; }
+    /* ── Panels ── */
+    .panel { display: none; padding: 24px; max-width: 1100px; margin: 0 auto; }
+    .panel.active { display: block; }
 
     /* ── Summary row ── */
     .summary {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 14px;
-      margin-bottom: 28px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
     }
     .stat-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 20px 22px;
-      box-shadow: var(--shadow);
+      padding: 16px 18px;
     }
     .stat-card .value {
-      font-size: 32px; font-weight: 700; letter-spacing: -1px; line-height: 1;
-      margin-bottom: 4px;
+      font-size: 28px; font-weight: 700; letter-spacing: -1px;
+      line-height: 1; margin-bottom: 4px;
     }
-    .stat-card .label { font-size: 12px; color: var(--subtle); font-weight: 500; text-transform: uppercase; letter-spacing: .4px; }
-    .stat-card.danger .value { color: var(--danger); }
-    .stat-card.warn   .value { color: var(--warn); }
-    .stat-card.ok     .value { color: var(--ok); }
+    .stat-card .label { font-size: 11px; color: var(--subtle); font-weight: 500; text-transform: uppercase; letter-spacing: .4px; }
+    .stat-card.c-ok     .value { color: var(--ok); }
+    .stat-card.c-warn   .value { color: var(--warn); }
+    .stat-card.c-danger .value { color: var(--danger); }
+    .stat-card.c-blue   .value { color: #3b82f6; }
 
     /* ── Alert banner ── */
     #alert-banner {
       display: none;
-      background: var(--danger);
-      color: #fff;
+      background: var(--danger); color: #fff;
       border-radius: var(--radius);
-      padding: 14px 20px;
-      margin-bottom: 20px;
-      font-size: 14px;
-      font-weight: 600;
-      animation: pulse-bg 1.5s ease-in-out infinite;
+      padding: 12px 18px;
+      margin-bottom: 16px;
+      font-size: 13px; font-weight: 600;
+      gap: 10px; align-items: center;
     }
-    #alert-banner.visible { display: flex; align-items: center; gap: 10px; }
-    @keyframes pulse-bg {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: .85; }
+    #alert-banner.visible { display: flex; }
+
+    /* ── Actions row ── */
+    .actions-row {
+      display: flex; gap: 8px; align-items: center;
+      margin-bottom: 20px; flex-wrap: wrap;
     }
+    .btn {
+      padding: 8px 16px; border-radius: 8px;
+      font-size: 12px; font-weight: 600;
+      border: 1px solid var(--border-strong);
+      background: var(--surface); color: var(--text);
+      cursor: pointer; transition: all 0.12s;
+      font-family: inherit;
+    }
+    .btn:hover { background: var(--bg); }
+    .btn.btn-primary { background: var(--text); color: white; border-color: var(--text); }
+    .btn.btn-primary:hover { opacity: 0.85; }
+    .btn.btn-danger  { background: var(--danger); color: white; border-color: var(--danger); }
+    .btn.btn-danger:hover { opacity: 0.85; }
+    .spacer { flex: 1; }
 
     /* ── Table ── */
     .table-wrap {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      box-shadow: var(--shadow);
       overflow: hidden;
     }
-
     .table-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 20px 14px;
+      display: flex; align-items: center;
+      padding: 14px 18px 12px;
       border-bottom: 1px solid var(--border);
+      gap: 10px;
     }
-    .table-header h2 { font-size: 15px; font-weight: 700; }
+    .table-header h2 { font-size: 14px; font-weight: 700; }
     .count-badge {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 2px 10px;
-      font-size: 12px;
-      color: var(--subtle);
-      font-weight: 600;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 20px; padding: 2px 10px;
+      font-size: 11px; color: var(--subtle); font-weight: 600;
     }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
+    table { width: 100%; border-collapse: collapse; }
     thead th {
-      text-align: left;
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .5px;
-      color: var(--subtle);
-      padding: 10px 20px;
+      text-align: left; font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .5px;
+      color: var(--subtle); padding: 10px 18px;
       border-bottom: 1px solid var(--border);
       background: var(--bg);
     }
-    tbody tr {
-      transition: background .15s;
-    }
-    tbody tr:hover { background: var(--bg); }
+    tbody tr:hover { background: #fafafa; }
     tbody tr + tr { border-top: 1px solid var(--border); }
-    td {
-      padding: 14px 20px;
-      font-size: 14px;
-      vertical-align: middle;
-    }
+    td { padding: 12px 18px; font-size: 13px; vertical-align: middle; }
 
-    /* Estado pill */
     .pill {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 12px; font-weight: 600;
-    }
-    .pill.ok     { background: rgba(52,199,89,.12);  color: #1a8c38; }
-    .pill.danger { background: rgba(255,59,48,.12);  color: #cc1a13; }
-    .pill.warn   { background: rgba(255,159,10,.12); color: #b36900; }
-    .pill .dot   { width: 6px; height: 6px; border-radius: 50%; }
-    .pill.ok   .dot   { background: var(--ok); }
-    .pill.danger .dot { background: var(--danger); }
-    .pill.warn   .dot { background: var(--warn); }
-
-    /* Alertas tags */
-    .alert-tags { display: flex; gap: 5px; flex-wrap: wrap; }
-    .tag {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 9px; border-radius: 20px;
       font-size: 11px; font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 6px;
     }
-    .tag.heartbeat { background: rgba(255,59,48,.1);  color: var(--danger); }
-    .tag.pestana   { background: rgba(255,159,10,.1); color: #b36900; }
+    .pill.ok     { background: rgba(34,197,94,.12);   color: #166534; }
+    .pill.warn   { background: rgba(245,158,11,.12);  color: #92400e; }
+    .pill.danger { background: rgba(239,68,68,.12);   color: #991b1b; }
+    .pill .dot-s { width: 5px; height: 5px; border-radius: 50%; }
+    .pill.ok   .dot-s { background: var(--ok); }
+    .pill.warn .dot-s { background: var(--warn); }
+    .pill.danger .dot-s { background: var(--danger); }
 
-    /* Row highlight */
-    tbody tr.alerta-row {
-      background: rgba(255,59,48,.04);
+    .progress-bar-wrap {
+      width: 80px; height: 4px;
+      background: var(--border); border-radius: 4px; overflow: hidden;
     }
+    .progress-bar-fill { height: 100%; background: var(--text); border-radius: 4px; transition: width 0.4s; }
+
+    .alert-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+    .tag {
+      font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 5px;
+    }
+    .tag.heartbeat { background: rgba(239,68,68,.1); color: var(--danger); }
+    .tag.pestana   { background: rgba(245,158,11,.1); color: #92400e; }
+
+    tbody tr.alerta-row { background: rgba(239,68,68,.03); }
     tbody tr.alerta-row td:first-child {
-      border-left: 3px solid var(--danger);
-      padding-left: 17px;
+      border-left: 2px solid var(--danger); padding-left: 16px;
     }
 
-    /* Empty state */
     #empty-row td {
-      text-align: center;
-      padding: 60px 20px;
-      color: var(--subtle);
-      font-size: 14px;
+      text-align: center; padding: 48px 20px;
+      color: var(--subtle); font-size: 13px;
+    }
+
+    /* ── RESPUESTAS PANEL ── */
+    .resp-toolbar {
+      display: flex; gap: 8px; align-items: center;
+      margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .search-input {
+      padding: 8px 12px; border: 1px solid var(--border-strong);
+      border-radius: 8px; font-size: 13px; font-family: inherit;
+      background: var(--surface); color: var(--text);
+      outline: none; width: 220px;
+    }
+    .search-input:focus { border-color: var(--text); }
+
+    /* Alumno cards grid */
+    .alumno-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 10px;
+    }
+    .alumno-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+      cursor: pointer; transition: box-shadow 0.15s;
+    }
+    .alumno-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+    .alumno-card.selected { border-color: var(--text); }
+    .ac-header {
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+    }
+    .ac-name { font-size: 13px; font-weight: 700; letter-spacing: -0.2px; }
+    .ac-cedula { font-size: 11px; color: var(--subtle); font-family: monospace; margin-top: 2px; }
+    .ac-ts { font-size: 10px; color: var(--subtle); white-space: nowrap; }
+    .ac-body { padding: 10px 16px 12px; }
+    .ac-mini-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px;
+    }
+    .ac-mini-item { font-size: 11px; color: var(--subtle); }
+    .ac-mini-item strong { color: var(--text); }
+    .ac-no-data {
+      font-size: 12px; color: var(--subtle);
+      padding: 12px 16px; text-align: center;
+    }
+
+    /* Detail drawer */
+    #detail-overlay {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,.4); backdrop-filter: blur(4px);
+    }
+    #detail-overlay.open { display: flex; align-items: flex-start; justify-content: flex-end; }
+    #detail-drawer {
+      width: min(580px, 100vw);
+      height: 100vh; overflow-y: auto;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      padding: 24px;
+    }
+    .drawer-close {
+      position: sticky; top: 0; z-index: 10;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+      background: var(--surface);
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .drawer-close h3 { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+    .btn-close {
+      width: 28px; height: 28px;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: var(--bg); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; color: var(--subtle);
+    }
+    .btn-close:hover { background: var(--border); }
+
+    /* response sections in drawer */
+    .resp-section { margin-bottom: 20px; }
+    .resp-section-title {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .6px; color: var(--subtle);
+      margin-bottom: 8px; padding-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+    }
+    .resp-row {
+      display: flex; align-items: flex-start;
+      gap: 10px; padding: 7px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+    .resp-row:last-child { border-bottom: none; }
+    .resp-key { color: var(--subtle); flex: 0 0 180px; line-height: 1.4; }
+    .resp-val { font-weight: 600; color: var(--text); }
+    .resp-val.text-ans { font-weight: 400; color: #333; font-style: italic; }
+
+    /* Likert visual bar */
+    .likert-visual {
+      display: flex; align-items: center; gap: 6px; flex: 1;
+    }
+    .lv-bar {
+      height: 6px; border-radius: 3px;
+      background: var(--text);
+    }
+    .lv-num { font-size: 11px; font-weight: 700; color: var(--text); min-width: 14px; }
+
+    /* no data state */
+    .no-data-state {
+      text-align: center; padding: 48px 20px;
+      color: var(--subtle); font-size: 13px;
+    }
+    .no-data-state strong { display: block; font-size: 16px; color: var(--text); margin-bottom: 6px; }
+
+    @media (max-width: 640px) {
+      .summary { grid-template-columns: 1fr 1fr; }
+      .alumno-grid { grid-template-columns: 1fr; }
+      #detail-drawer { width: 100vw; }
     }
   </style>
 </head>
 <body>
 
 <header>
-  <div class="header-left">
-    <div class="logo-icon">
-      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zm-7 9.22V16l7 3.78 7-3.78v-3.78L12 16 5 12.22z"/>
-      </svg>
+  <div class="header-brand">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zm-7 9.22V16l7 3.78 7-3.78v-3.78L12 16 5 12.22z"/></svg>
     </div>
-    <span class="brand">Sistema de Examen</span>
-    <span class="sub">— Panel de control</span>
+    <span class="brand-name">Sistema de Evaluación</span>
+    <span class="brand-sub">— Admin</span>
   </div>
+
+  <div class="header-tabs">
+    <button class="tab-btn active" id="tab-monitor" onclick="switchTab('monitor')">Monitor</button>
+    <button class="tab-btn"        id="tab-respuestas" onclick="switchTab('respuestas')">Respuestas</button>
+  </div>
+
   <div class="server-dot">
     <div class="dot" id="server-dot"></div>
     <span id="server-txt">Conectado</span>
   </div>
 </header>
 
-<main>
-  <!-- Summary -->
+<!-- ═══════════════════════════════════════
+     PANEL 1 — MONITOR EN TIEMPO REAL
+════════════════════════════════════════ -->
+<div class="panel active" id="panel-monitor">
+
   <div class="summary">
-    <div class="stat-card ok">
+    <div class="stat-card c-ok">
       <div class="value" id="cnt-total">0</div>
-      <div class="label">Alumnos conectados</div>
+      <div class="label">Conectados</div>
     </div>
-    <div class="stat-card ok">
+    <div class="stat-card c-ok" id="card-activos">
       <div class="value" id="cnt-activos">0</div>
       <div class="label">Activos</div>
     </div>
-    <div class="stat-card danger">
+    <div class="stat-card c-danger">
       <div class="value" id="cnt-alertas">0</div>
       <div class="label">Con alertas</div>
     </div>
+    <div class="stat-card c-blue">
+      <div class="value" id="cnt-enviados">0</div>
+      <div class="label">Enviaron</div>
+    </div>
   </div>
 
-  <!-- Alert banner -->
   <div id="alert-banner">
-    <svg width="18" height="18" fill="white" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 3.5L20.5 19h-17L12 5.5zM11 10v4h2v-4h-2zm0 6v2h2v-2h-2z"/></svg>
+    <svg width="16" height="16" fill="white" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 3.5L20.5 19h-17L12 5.5zM11 10v4h2v-4h-2zm0 6v2h2v-2h-2z"/></svg>
     <span id="alert-text"></span>
   </div>
 
-  <!-- Table -->
+  <div class="actions-row">
+    <span style="font-size:11px;color:var(--subtle);font-weight:600;text-transform:uppercase;letter-spacing:.4px">Acciones:</span>
+    <button class="btn btn-danger" onclick="finalizarExamen()">⏹ Finalizar examen</button>
+    <div class="spacer"></div>
+    <button class="btn" onclick="exportarCSV()">↓ Exportar CSV</button>
+    <button class="btn" onclick="exportarJSON()">↓ Exportar JSON</button>
+  </div>
+
   <div class="table-wrap">
     <div class="table-header">
-      <h2>Alumnos en examen</h2>
+      <h2>Alumnos en evaluación</h2>
       <span class="count-badge" id="badge-count">0 alumnos</span>
     </div>
     <table>
       <thead>
         <tr>
-          <th>Nombre completo</th>
+          <th>Nombre</th>
           <th>Cédula</th>
           <th>Estado</th>
+          <th>Progreso</th>
           <th>Alertas</th>
         </tr>
       </thead>
       <tbody id="tbody">
         <tr id="empty-row">
-          <td colspan="4">Esperando que los alumnos ingresen...</td>
+          <td colspan="5">Esperando que los alumnos ingresen…</td>
         </tr>
       </tbody>
     </table>
   </div>
-</main>
+</div>
+
+<!-- ═══════════════════════════════════════
+     PANEL 2 — RESPUESTAS
+════════════════════════════════════════ -->
+<div class="panel" id="panel-respuestas">
+
+  <div class="resp-toolbar">
+    <input class="search-input" type="text" id="search-input"
+           placeholder="Buscar por nombre o cédula…"
+           oninput="filtrarAlumnos(this.value)" />
+    <div class="spacer"></div>
+    <span id="resp-count-label" style="font-size:12px;color:var(--subtle)">0 respuestas</span>
+    <button class="btn" onclick="exportarCSV()">↓ CSV</button>
+    <button class="btn" onclick="exportarJSON()">↓ JSON</button>
+  </div>
+
+  <div id="alumno-grid" class="alumno-grid">
+    <div class="no-data-state">
+      <strong>Sin respuestas aún</strong>
+      Los alumnos que completen la evaluación aparecerán aquí.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     DRAWER — DETALLE DE RESPUESTAS
+════════════════════════════════════════ -->
+<div id="detail-overlay" onclick="cerrarDrawer(event)">
+  <div id="detail-drawer">
+    <div class="drawer-close">
+      <h3 id="drawer-title">Respuestas</h3>
+      <button class="btn-close" onclick="cerrarDrawer(null, true)">✕</button>
+    </div>
+    <div id="drawer-body"></div>
+  </div>
+</div>
 
 <script>
-  const socket = io();
-  socket.emit('join_admin');
+/* ── State ──────────────────────────────────────────── */
+const socket = io();
+let todosAlumnos = [];          // lista del monitor
+let todasRespuestas = [];       // respuestas guardadas
 
-  socket.on('connect',    () => setServerStatus(true));
-  socket.on('disconnect', () => setServerStatus(false));
+/* ── Socket setup ─────────────────────────────────── */
+socket.emit('join_admin');
+socket.on('connect',    () => setServerStatus(true));
+socket.on('disconnect', () => setServerStatus(false));
 
-  function setServerStatus(ok) {
-    document.getElementById('server-dot').style.background = ok ? 'var(--ok)' : 'var(--danger)';
-    document.getElementById('server-txt').textContent = ok ? 'Conectado' : 'Sin conexión';
-  }
+socket.on('estado_alumnos', (lista) => {
+  todosAlumnos = lista;
+  renderMonitor(lista);
+});
 
-  socket.on('estado_alumnos', (lista) => {
-    renderTabla(lista);
+socket.on('respuestas_guardadas', (n) => {
+  document.getElementById('cnt-enviados').textContent = n;
+  // Pedir el JSON completo para tener los datos
+  socket.emit('exportar_json');
+});
+
+socket.on('json_listo', ({ data }) => {
+  todasRespuestas = data;
+  renderRespuestas(todasRespuestas);
+  document.getElementById('resp-count-label').textContent =
+    `${data.length} respuesta${data.length !== 1 ? 's' : ''}`;
+});
+
+socket.on('examen_estado', ({ finalizado }) => {
+  // Podría usarse para mostrar estado del examen
+});
+
+socket.on('csv_listo', ({ csv, total }) => {
+  descargarCSV(csv, `evaluacion_${new Date().toISOString().slice(0,10)}.csv`);
+});
+
+/* Cargar respuestas al inicio */
+socket.on('connect', () => {
+  socket.emit('exportar_json');
+});
+
+/* ── Server status ─────────────────────────────────── */
+function setServerStatus(ok) {
+  document.getElementById('server-dot').style.background = ok ? 'var(--ok)' : 'var(--danger)';
+  document.getElementById('server-txt').textContent = ok ? 'Conectado' : 'Sin conexión';
+}
+
+/* ── Tab switch ────────────────────────────────────── */
+function switchTab(tab) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+/* ══════════════════════════════════════════════════════
+   MONITOR
+══════════════════════════════════════════════════════ */
+function renderMonitor(lista) {
+  const tbody = document.getElementById('tbody');
+
+  if (lista.length === 0) {
+    tbody.innerHTML = `<tr id="empty-row"><td colspan="5">Esperando que los alumnos ingresen…</td></tr>`;
+    document.getElementById('badge-count').textContent = '0 alumnos';
     actualizarSummary(lista);
     actualizarAlertBanner(lista);
+    return;
+  }
+
+  tbody.innerHTML = '';
+  document.getElementById('badge-count').textContent =
+    `${lista.length} alumno${lista.length !== 1 ? 's' : ''}`;
+
+  lista.forEach(a => {
+    const tieneAlerta = a.alertas.length > 0 || !a.activo;
+    const tr = document.createElement('tr');
+    if (tieneAlerta) tr.classList.add('alerta-row');
+
+    let pillClass, pillLabel;
+    if (!a.activo)            { pillClass = 'danger'; pillLabel = 'Inactivo'; }
+    else if (a.alertas.length) { pillClass = 'warn';   pillLabel = 'Con alerta'; }
+    else                       { pillClass = 'ok';     pillLabel = 'Activo'; }
+
+    const pct = a.progreso || 0;
+    const tagsHtml = a.alertas.map(al => {
+      if (al === 'sin_heartbeat') return `<span class="tag heartbeat">Sin señal</span>`;
+      if (al === 'cambio_pestana') return `<span class="tag pestana">Cambió pestaña</span>`;
+      return `<span class="tag">${al}</span>`;
+    }).join('') || `<span style="color:var(--subtle);font-size:11px">—</span>`;
+
+    tr.innerHTML = `
+      <td><strong>${esc(a.nombre)}</strong></td>
+      <td style="color:var(--subtle);font-family:monospace;font-size:12px">${esc(a.cedula)}</td>
+      <td><span class="pill ${pillClass}"><span class="dot-s"></span>${pillLabel}</span></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" style="width:${pct}%"></div>
+          </div>
+          <span style="font-size:11px;color:var(--subtle)">${pct}%</span>
+        </div>
+      </td>
+      <td><div class="alert-tags">${tagsHtml}</div></td>
+    `;
+    tbody.appendChild(tr);
   });
 
-  function renderTabla(lista) {
-    const tbody = document.getElementById('tbody');
-    const emptyRow = document.getElementById('empty-row');
+  actualizarSummary(lista);
+  actualizarAlertBanner(lista);
+}
 
-    if (lista.length === 0) {
-      tbody.innerHTML = '';
-      const tr = document.createElement('tr');
-      tr.id = 'empty-row';
-      tr.innerHTML = '<td colspan="4">Esperando que los alumnos ingresen...</td>';
-      tbody.appendChild(tr);
-      document.getElementById('badge-count').textContent = '0 alumnos';
-      return;
-    }
+function actualizarSummary(lista) {
+  const activos = lista.filter(a => a.activo).length;
+  const conAlerta = lista.filter(a => a.alertas.length > 0 || !a.activo).length;
+  document.getElementById('cnt-total').textContent   = lista.length;
+  document.getElementById('cnt-activos').textContent = activos;
+  document.getElementById('cnt-alertas').textContent = conAlerta;
 
-    tbody.innerHTML = '';
-    document.getElementById('badge-count').textContent = `${lista.length} alumno${lista.length !== 1 ? 's' : ''}`;
+  const cardActivos = document.getElementById('card-activos');
+  cardActivos.className = 'stat-card ' +
+    (activos === lista.length && lista.length > 0 ? 'c-ok' : 'c-warn');
+}
 
-    lista.forEach(a => {
-      const tieneAlerta = a.alertas.length > 0 || !a.activo;
-      const tr = document.createElement('tr');
-      if (tieneAlerta) tr.classList.add('alerta-row');
+function actualizarAlertBanner(lista) {
+  const banner = document.getElementById('alert-banner');
+  const sospechosos = lista.filter(a => a.alertas.includes('cambio_pestana') || !a.activo);
+  if (sospechosos.length === 0) { banner.classList.remove('visible'); return; }
+  banner.classList.add('visible');
+  const nombres = sospechosos.map(a => a.nombre).join(', ');
+  document.getElementById('alert-text').textContent =
+    `Actividad sospechosa detectada — ${nombres}`;
+}
 
-      // Pill de estado
-      let pillClass, pillLabel;
-      if (!a.activo) {
-        pillClass = 'danger'; pillLabel = 'Inactivo';
-      } else if (a.alertas.length > 0) {
-        pillClass = 'warn'; pillLabel = 'Activo c/alerta';
-      } else {
-        pillClass = 'ok'; pillLabel = 'Activo';
-      }
+/* ── Acciones admin ──────────────────────────────── */
+function finalizarExamen() {
+  if (!confirm('¿Finalizar el examen para todos los alumnos?')) return;
+  socket.emit('finalizar_examen');
+}
 
-      // Tags de alertas
-      const tagsHtml = a.alertas.map(al => {
-        if (al === 'sin_heartbeat') return `<span class="tag heartbeat">Sin señal</span>`;
-        if (al === 'cambio_pestana') return `<span class="tag pestana">Cambió pestaña</span>`;
-        return `<span class="tag">${al}</span>`;
-      }).join('') || '<span style="color:var(--subtle);font-size:12px">—</span>';
+function exportarCSV() {
+  socket.emit('exportar_csv');
+}
 
-      tr.innerHTML = `
-        <td><strong>${escHtml(a.nombre)}</strong></td>
-        <td style="color:var(--subtle);font-family:monospace;font-size:13px">${escHtml(a.cedula)}</td>
-        <td>
-          <span class="pill ${pillClass}">
-            <span class="dot"></span>${pillLabel}
-          </span>
-        </td>
-        <td><div class="alert-tags">${tagsHtml}</div></td>
-      `;
-      tbody.appendChild(tr);
+function exportarJSON() {
+  if (!todasRespuestas.length) { alert('No hay respuestas aún.'); return; }
+  const blob = new Blob([JSON.stringify(todasRespuestas, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `evaluacion_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+function descargarCSV(csv, nombre) {
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = nombre;
+  a.click();
+}
+
+/* ══════════════════════════════════════════════════════
+   RESPUESTAS PANEL
+══════════════════════════════════════════════════════ */
+
+/* Mapa de claves legibles */
+const LABELS = {
+  rendimiento_general:    'Rendimiento general',
+  frecuencia_estudio:     'Frecuencia de estudio',
+  nota_esperada:          'Nota esperada',
+  materia_dificil:        'Materia más difícil',
+  apoyo_extra:            'Necesita apoyo extra',
+  convivencia_general:    'Convivencia general',
+  respeto_compañeros:     'Respeto entre compañeros',
+  inclusion:              'Inclusión',
+  conflicto_compañeros:   'Conflictos con compañeros',
+  convivencia_positivo:   'Gesto positivo destacado',
+  convivencia_conflicto:  'Conflicto relatado',
+  comites_general:        'Comités en general',
+  comite_participacion:   'Participación en comité',
+  mesa_general:           'Mesa directiva en general',
+  cuota_al_dia:           'Al día con cuotas',
+  recursos_transparencia: 'Transparencia de recursos',
+  usa_emca:               'Usa emca.web.app',
+  emca_herramienta:       'Herramienta más usada de EMCA',
+  emca_sugerencia:        'Sugerencia para EMCA',
+  compromiso_curso:       'Compromiso con el curso',
+  compromisos_personales: 'Compromisos personales',
+  comentario_final:       'Comentario final',
+};
+
+/* Grupos temáticos para el drawer */
+const GRUPOS = [
+  {
+    titulo: 'I — Rendimiento académico',
+    prefijos: ['rendimiento', 'frecuencia_estudio', 'nota_esperada', 'materia_', 'apoyo_extra'],
+  },
+  {
+    titulo: 'II — Convivencia',
+    prefijos: ['convivencia', 'respeto', 'inclusion', 'conflicto'],
+  },
+  {
+    titulo: 'III — Comités',
+    prefijos: ['comite'],
+  },
+  {
+    titulo: 'IV — Mesa directiva',
+    prefijos: ['mesa'],
+  },
+  {
+    titulo: 'V — Cuotas y recursos',
+    prefijos: ['cuota', 'recursos', 'usa_emca', 'emca'],
+  },
+  {
+    titulo: 'VI — Compromisos',
+    prefijos: ['compromiso'],
+  },
+  {
+    titulo: 'Materias',
+    prefijos: ['materia_'],
+  },
+];
+
+function labelKey(k) {
+  if (LABELS[k]) return LABELS[k];
+  // Dinámicos: materia_*, comite_*, mesa_*
+  if (k.startsWith('materia_'))  return 'Materia: ' + k.replace('materia_','').replace(/_/g,' ');
+  if (k.startsWith('comite_'))   return 'Comité: '  + k.replace('comite_','').replace(/_opinion/,' — opinión').replace(/_/g,' ');
+  if (k.startsWith('mesa_'))     return 'Mesa — '   + k.replace('mesa_','').replace(/_opinion/,' opinión').replace(/_/g,' ');
+  return k.replace(/_/g,' ');
+}
+
+function isTexto(k, v) {
+  // Si el valor es un string largo o no numérico
+  if (typeof v === 'string' && !['si','no'].includes(v)) return true;
+  return false;
+}
+
+function renderRespuestas(lista) {
+  const grid = document.getElementById('alumno-grid');
+  if (!lista.length) {
+    grid.innerHTML = `<div class="no-data-state"><strong>Sin respuestas aún</strong>Los alumnos que completen la evaluación aparecerán aquí.</div>`;
+    return;
+  }
+
+  grid.innerHTML = '';
+  lista.forEach((r, i) => {
+    const card = document.createElement('div');
+    card.className = 'alumno-card';
+    card.onclick = () => abrirDrawer(r);
+
+    const ts = r.timestamp ? new Date(r.timestamp).toLocaleString('es-PY', { timeStyle: 'short', dateStyle: 'short' }) : '—';
+
+    // Mini resumen: algunos valores clave
+    const clavesMini = ['rendimiento_general','convivencia_general','mesa_general','comites_general'];
+    const miniRows = clavesMini.map(k => {
+      const v = r.respuestas?.[k];
+      if (v == null) return null;
+      return `<div class="ac-mini-item">${labelKey(k)}: <strong>${v}</strong></div>`;
+    }).filter(Boolean).join('');
+
+    card.innerHTML = `
+      <div class="ac-header">
+        <div>
+          <div class="ac-name">${esc(r.nombre)}</div>
+          <div class="ac-cedula">${esc(r.cedula)}</div>
+        </div>
+        <div class="ac-ts">${ts}</div>
+      </div>
+      <div class="ac-body">
+        ${miniRows
+          ? `<div class="ac-mini-grid">${miniRows}</div>`
+          : `<div class="ac-no-data">Ver respuestas →</div>`}
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function filtrarAlumnos(q) {
+  const term = q.toLowerCase().trim();
+  const filtrada = term
+    ? todasRespuestas.filter(r =>
+        r.nombre.toLowerCase().includes(term) ||
+        r.cedula.toLowerCase().includes(term))
+    : todasRespuestas;
+  renderRespuestas(filtrada);
+}
+
+/* ── Drawer ────────────────────────────────────────── */
+function abrirDrawer(r) {
+  document.getElementById('drawer-title').textContent = r.nombre;
+  const body = document.getElementById('drawer-body');
+  body.innerHTML = '';
+
+  if (!r.respuestas || !Object.keys(r.respuestas).length) {
+    body.innerHTML = `<div class="no-data-state"><strong>Sin datos</strong>Este alumno no tiene respuestas registradas.</div>`;
+    document.getElementById('detail-overlay').classList.add('open');
+    return;
+  }
+
+  // Meta
+  const ts = r.timestamp
+    ? new Date(r.timestamp).toLocaleString('es-PY', { dateStyle:'long', timeStyle:'short' })
+    : '—';
+  body.innerHTML += `
+    <div class="resp-section">
+      <div class="resp-section-title">Identificación</div>
+      <div class="resp-row"><span class="resp-key">Nombre</span><span class="resp-val">${esc(r.nombre)}</span></div>
+      <div class="resp-row"><span class="resp-key">Cédula</span><span class="resp-val" style="font-family:monospace">${esc(r.cedula)}</span></div>
+      <div class="resp-row"><span class="resp-key">Enviado</span><span class="resp-val">${ts}</span></div>
+    </div>`;
+
+  // Agrupar claves
+  const claves = Object.keys(r.respuestas);
+  const usadas = new Set();
+
+  GRUPOS.forEach(grupo => {
+    const rows = claves.filter(k => {
+      if (usadas.has(k)) return false;
+      return grupo.prefijos.some(p => k.startsWith(p) || k === p);
     });
+    if (!rows.length) return;
+    rows.forEach(k => usadas.add(k));
+
+    let html = `<div class="resp-section"><div class="resp-section-title">${grupo.titulo}</div>`;
+    rows.forEach(k => {
+      const v = r.respuestas[k];
+      html += renderRespRow(k, v);
+    });
+    html += '</div>';
+    body.innerHTML += html;
+  });
+
+  // Resto sin grupo
+  const resto = claves.filter(k => !usadas.has(k));
+  if (resto.length) {
+    let html = `<div class="resp-section"><div class="resp-section-title">Otras respuestas</div>`;
+    resto.forEach(k => { html += renderRespRow(k, r.respuestas[k]); });
+    html += '</div>';
+    body.innerHTML += html;
   }
 
-  function actualizarSummary(lista) {
-    const activos = lista.filter(a => a.activo).length;
-    const conAlerta = lista.filter(a => a.alertas.length > 0 || !a.activo).length;
-    document.getElementById('cnt-total').textContent   = lista.length;
-    document.getElementById('cnt-activos').textContent = activos;
-    document.getElementById('cnt-alertas').textContent = conAlerta;
+  document.getElementById('detail-overlay').classList.add('open');
+}
 
-    // Cambiar color tarjeta activos
-    const cardActivos = document.getElementById('cnt-activos').closest('.stat-card');
-    cardActivos.className = 'stat-card ' + (activos === lista.length && lista.length > 0 ? 'ok' : 'warn');
+function renderRespRow(k, v) {
+  const label = labelKey(k);
+  if (isTexto(k, v)) {
+    return `
+      <div class="resp-row" style="flex-direction:column;align-items:flex-start;gap:4px">
+        <span class="resp-key">${label}</span>
+        <span class="resp-val text-ans">${v ? esc(String(v)) : '<em style="color:var(--subtle)">Sin respuesta</em>'}</span>
+      </div>`;
   }
-
-  function actualizarAlertBanner(lista) {
-    const banner = document.getElementById('alert-banner');
-    const alertText = document.getElementById('alert-text');
-
-    const conAlerta = lista.filter(a => a.alertas.includes('cambio_pestana') || !a.activo);
-
-    if (conAlerta.length === 0) {
-      banner.classList.remove('visible');
-      return;
-    }
-
-    banner.classList.add('visible');
-    const nombres = conAlerta.map(a => a.nombre).join(', ');
-    alertText.textContent = `Atención: ${conAlerta.length === 1 ? 'actividad sospechosa' : 'actividades sospechosas'} detectada${conAlerta.length > 1 ? 's' : ''} — ${nombres}`;
+  // Si es numérico 1-5: mostrar barra visual
+  if (typeof v === 'number' && v >= 1 && v <= 5) {
+    const w = (v / 5 * 100).toFixed(0);
+    return `
+      <div class="resp-row">
+        <span class="resp-key">${label}</span>
+        <div class="likert-visual">
+          <div class="lv-bar" style="width:${w}px;max-width:80px;height:6px;border-radius:3px;background:var(--text)"></div>
+          <span class="lv-num">${v}/5</span>
+        </div>
+      </div>`;
   }
+  // Si/No u otro
+  return `
+    <div class="resp-row">
+      <span class="resp-key">${label}</span>
+      <span class="resp-val">${esc(String(v))}</span>
+    </div>`;
+}
 
-  function escHtml(str) {
-    return String(str)
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function cerrarDrawer(event, force) {
+  if (force || (event && event.target === document.getElementById('detail-overlay'))) {
+    document.getElementById('detail-overlay').classList.remove('open');
   }
+}
+
+/* ── Utils ─────────────────────────────────────────── */
+function esc(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 </script>
 </body>
 </html>
