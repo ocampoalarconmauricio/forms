@@ -113,8 +113,10 @@ io.on('connection', (socket) => {
   socket.on('cambio_pestana', ({ oculta }) => {
     const a = alumnos.get(socket.id);
     if (!a) return;
-    if (oculta && !a.alertas.includes('cambio_pestana')) {
-      a.alertas.push('cambio_pestana');
+    if (oculta) {
+      if (!a.alertas.includes('cambio_pestana')) a.alertas.push('cambio_pestana');
+    } else {
+      a.alertas = a.alertas.filter(x => x !== 'cambio_pestana');
     }
     broadcast();
   });
@@ -183,14 +185,13 @@ io.on('connection', (socket) => {
 
 // ── Heartbeat checker cada 5 s ───────────────────────────────────────────────
 setInterval(() => {
-  let changed = false;
   alumnos.forEach((a) => {
     if (a.activo && Date.now() - a.lastHeartbeat > 6000) {
       a.activo = false;
-      if (!a.alertas.includes('sin_heartbeat')) { a.alertas.push('sin_heartbeat'); changed = true; }
+      if (!a.alertas.includes('sin_heartbeat')) a.alertas.push('sin_heartbeat');
     }
   });
-  if (changed) broadcast();
+  if (admins.size > 0) broadcast();
 }, 5000);
 
 // ── Servir archivos estáticos ─────────────────────────────────────────────────
