@@ -15,7 +15,6 @@
       --border-strong: #c8c8c8;
       --text:    #111111;
       --subtle:  #767676;
-      --accent:  #111111;
       --danger:  #ef4444;
       --warn:    #f59e0b;
       --ok:      #22c55e;
@@ -25,11 +24,11 @@
     body {
       min-height: 100vh;
       background: var(--bg);
-      font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Inter', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
       color: var(--text);
     }
 
-    /* ── Top bar ── */
+    /* ── Header ── */
     header {
       background: rgba(255,255,255,.92);
       backdrop-filter: blur(12px);
@@ -49,7 +48,6 @@
     .brand-name { font-size: 13px; font-weight: 700; letter-spacing: -0.3px; }
     .brand-sub  { font-size: 12px; color: var(--subtle); margin-left: 6px; }
 
-    /* tab nav in header */
     .header-tabs {
       display: flex; align-items: center; gap: 2px;
       margin-left: auto;
@@ -59,7 +57,7 @@
       font-size: 12px; font-weight: 600;
       border: none; cursor: pointer;
       background: transparent; color: var(--subtle);
-      transition: all 0.15s;
+      transition: all 0.15s; font-family: inherit;
     }
     .tab-btn:hover { background: var(--bg); color: var(--text); }
     .tab-btn.active { background: var(--text); color: white; }
@@ -69,18 +67,17 @@
       font-size: 11px; color: var(--subtle);
       margin-left: 16px;
     }
-    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+    .hdot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
 
     /* ── Panels ── */
     .panel { display: none; padding: 24px; max-width: 1100px; margin: 0 auto; }
     .panel.active { display: block; }
 
-    /* ── Summary row ── */
+    /* ── Summary ── */
     .summary {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: 10px; margin-bottom: 20px;
     }
     .stat-card {
       background: var(--surface);
@@ -88,10 +85,7 @@
       border-radius: var(--radius);
       padding: 16px 18px;
     }
-    .stat-card .value {
-      font-size: 28px; font-weight: 700; letter-spacing: -1px;
-      line-height: 1; margin-bottom: 4px;
-    }
+    .stat-card .value { font-size: 28px; font-weight: 700; letter-spacing: -1px; line-height: 1; margin-bottom: 4px; }
     .stat-card .label { font-size: 11px; color: var(--subtle); font-weight: 500; text-transform: uppercase; letter-spacing: .4px; }
     .stat-card.c-ok     .value { color: var(--ok); }
     .stat-card.c-warn   .value { color: var(--warn); }
@@ -103,8 +97,7 @@
       display: none;
       background: var(--danger); color: #fff;
       border-radius: var(--radius);
-      padding: 12px 18px;
-      margin-bottom: 16px;
+      padding: 12px 18px; margin-bottom: 16px;
       font-size: 13px; font-weight: 600;
       gap: 10px; align-items: center;
     }
@@ -112,36 +105,63 @@
 
     /* ── Actions row ── */
     .actions-row {
-      display: flex; gap: 8px; align-items: center;
+      display: flex; gap: 12px; align-items: center;
       margin-bottom: 20px; flex-wrap: wrap;
     }
+    .spacer { flex: 1; }
+
+    /* ── Toggle switch ── */
+    .evento-toggle {
+      display: flex; align-items: center; gap: 12px;
+      cursor: pointer; user-select: none;
+      padding: 10px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: border-color 0.2s;
+    }
+    .evento-toggle:hover { border-color: var(--border-strong); }
+    .evento-toggle.open  { border-color: var(--ok); background: rgba(34,197,94,.05); }
+
+    .toggle-track {
+      width: 40px; height: 22px; border-radius: 11px;
+      background: #d1d1d1;
+      position: relative; transition: background 0.25s;
+      flex-shrink: 0;
+    }
+    .evento-toggle.open .toggle-track { background: var(--ok); }
+    .toggle-thumb {
+      width: 18px; height: 18px; border-radius: 50%;
+      background: white;
+      position: absolute; top: 2px; left: 2px;
+      transition: transform 0.25s;
+      box-shadow: 0 1px 4px rgba(0,0,0,.2);
+    }
+    .evento-toggle.open .toggle-thumb { transform: translateX(18px); }
+
+    .toggle-label { font-size: 13px; font-weight: 700; letter-spacing: -0.2px; }
+    .toggle-sub   { font-size: 11px; color: var(--subtle); margin-top: 1px; }
+    .evento-toggle.open .toggle-sub { color: #166534; }
+
+    /* ── Buttons ── */
     .btn {
       padding: 8px 16px; border-radius: 8px;
       font-size: 12px; font-weight: 600;
       border: 1px solid var(--border-strong);
       background: var(--surface); color: var(--text);
-      cursor: pointer; transition: all 0.12s;
-      font-family: inherit;
+      cursor: pointer; transition: all 0.12s; font-family: inherit;
     }
     .btn:hover { background: var(--bg); }
-    .btn.btn-primary { background: var(--text); color: white; border-color: var(--text); }
-    .btn.btn-primary:hover { opacity: 0.85; }
-    .btn.btn-danger  { background: var(--danger); color: white; border-color: var(--danger); }
-    .btn.btn-danger:hover { opacity: 0.85; }
-    .spacer { flex: 1; }
 
     /* ── Table ── */
     .table-wrap {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
+      border-radius: var(--radius); overflow: hidden;
     }
     .table-header {
       display: flex; align-items: center;
-      padding: 14px 18px 12px;
-      border-bottom: 1px solid var(--border);
-      gap: 10px;
+      padding: 14px 18px 12px; border-bottom: 1px solid var(--border); gap: 10px;
     }
     .table-header h2 { font-size: 14px; font-weight: 700; }
     .count-badge {
@@ -149,16 +169,24 @@
       border-radius: 20px; padding: 2px 10px;
       font-size: 11px; color: var(--subtle); font-weight: 600;
     }
+    /* evento badge en table header */
+    .evento-badge {
+      margin-left: auto;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 600;
+    }
+    .evento-badge.open   { background: rgba(34,197,94,.12); color: #166534; }
+    .evento-badge.closed { background: rgba(239,68,68,.1);  color: #991b1b; }
+
     table { width: 100%; border-collapse: collapse; }
     thead th {
       text-align: left; font-size: 10px; font-weight: 600;
       text-transform: uppercase; letter-spacing: .5px;
       color: var(--subtle); padding: 10px 18px;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg);
+      border-bottom: 1px solid var(--border); background: var(--bg);
     }
     tbody tr:hover { background: #fafafa; }
-    tbody tr + tr { border-top: 1px solid var(--border); }
+    tbody tr + tr  { border-top: 1px solid var(--border); }
     td { padding: 12px 18px; font-size: 13px; vertical-align: middle; }
 
     .pill {
@@ -166,38 +194,27 @@
       padding: 3px 9px; border-radius: 20px;
       font-size: 11px; font-weight: 600;
     }
-    .pill.ok     { background: rgba(34,197,94,.12);   color: #166534; }
-    .pill.warn   { background: rgba(245,158,11,.12);  color: #92400e; }
-    .pill.danger { background: rgba(239,68,68,.12);   color: #991b1b; }
+    .pill.ok     { background: rgba(34,197,94,.12);  color: #166534; }
+    .pill.warn   { background: rgba(245,158,11,.12); color: #92400e; }
+    .pill.danger { background: rgba(239,68,68,.12);  color: #991b1b; }
     .pill .dot-s { width: 5px; height: 5px; border-radius: 50%; }
     .pill.ok   .dot-s { background: var(--ok); }
     .pill.warn .dot-s { background: var(--warn); }
     .pill.danger .dot-s { background: var(--danger); }
 
-    .progress-bar-wrap {
-      width: 80px; height: 4px;
-      background: var(--border); border-radius: 4px; overflow: hidden;
-    }
+    .progress-bar-wrap { width: 80px; height: 4px; background: var(--border); border-radius: 4px; overflow: hidden; }
     .progress-bar-fill { height: 100%; background: var(--text); border-radius: 4px; transition: width 0.4s; }
 
     .alert-tags { display: flex; gap: 4px; flex-wrap: wrap; }
-    .tag {
-      font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 5px;
-    }
+    .tag { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 5px; }
     .tag.heartbeat { background: rgba(239,68,68,.1); color: var(--danger); }
     .tag.pestana   { background: rgba(245,158,11,.1); color: #92400e; }
 
     tbody tr.alerta-row { background: rgba(239,68,68,.03); }
-    tbody tr.alerta-row td:first-child {
-      border-left: 2px solid var(--danger); padding-left: 16px;
-    }
+    tbody tr.alerta-row td:first-child { border-left: 2px solid var(--danger); padding-left: 16px; }
+    #empty-row td { text-align: center; padding: 48px 20px; color: var(--subtle); font-size: 13px; }
 
-    #empty-row td {
-      text-align: center; padding: 48px 20px;
-      color: var(--subtle); font-size: 13px;
-    }
-
-    /* ── RESPUESTAS PANEL ── */
+    /* ── Respuestas panel ── */
     .resp-toolbar {
       display: flex; gap: 8px; align-items: center;
       margin-bottom: 16px; flex-wrap: wrap;
@@ -205,12 +222,10 @@
     .search-input {
       padding: 8px 12px; border: 1px solid var(--border-strong);
       border-radius: 8px; font-size: 13px; font-family: inherit;
-      background: var(--surface); color: var(--text);
-      outline: none; width: 220px;
+      background: var(--surface); color: var(--text); outline: none; width: 220px;
     }
     .search-input:focus { border-color: var(--text); }
 
-    /* Alumno cards grid */
     .alumno-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -222,46 +237,34 @@
       cursor: pointer; transition: box-shadow 0.15s;
     }
     .alumno-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
-    .alumno-card.selected { border-color: var(--text); }
     .ac-header {
-      padding: 14px 16px 10px;
-      border-bottom: 1px solid var(--border);
+      padding: 14px 16px 10px; border-bottom: 1px solid var(--border);
       display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
     }
-    .ac-name { font-size: 13px; font-weight: 700; letter-spacing: -0.2px; }
+    .ac-name   { font-size: 13px; font-weight: 700; letter-spacing: -0.2px; }
     .ac-cedula { font-size: 11px; color: var(--subtle); font-family: monospace; margin-top: 2px; }
-    .ac-ts { font-size: 10px; color: var(--subtle); white-space: nowrap; }
-    .ac-body { padding: 10px 16px 12px; }
-    .ac-mini-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px;
-    }
+    .ac-ts     { font-size: 10px; color: var(--subtle); white-space: nowrap; }
+    .ac-body   { padding: 10px 16px 12px; }
+    .ac-mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; }
     .ac-mini-item { font-size: 11px; color: var(--subtle); }
     .ac-mini-item strong { color: var(--text); }
-    .ac-no-data {
-      font-size: 12px; color: var(--subtle);
-      padding: 12px 16px; text-align: center;
-    }
+    .ac-no-data { font-size: 12px; color: var(--subtle); padding: 12px 16px; text-align: center; }
 
-    /* Detail drawer */
+    /* ── Detail drawer ── */
     #detail-overlay {
       display: none; position: fixed; inset: 0; z-index: 200;
       background: rgba(0,0,0,.4); backdrop-filter: blur(4px);
     }
     #detail-overlay.open { display: flex; align-items: flex-start; justify-content: flex-end; }
     #detail-drawer {
-      width: min(580px, 100vw);
-      height: 100vh; overflow-y: auto;
-      background: var(--surface);
-      border-left: 1px solid var(--border);
-      padding: 24px;
+      width: min(580px, 100vw); height: 100vh; overflow-y: auto;
+      background: var(--surface); border-left: 1px solid var(--border); padding: 24px;
     }
     .drawer-close {
       position: sticky; top: 0; z-index: 10;
       display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 20px;
-      background: var(--surface);
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px; background: var(--surface);
+      padding-bottom: 12px; border-bottom: 1px solid var(--border);
     }
     .drawer-close h3 { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
     .btn-close {
@@ -269,44 +272,29 @@
       border: 1px solid var(--border); border-radius: 6px;
       background: var(--bg); cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      font-size: 14px; color: var(--subtle);
+      font-size: 14px; color: var(--subtle); font-family: inherit;
     }
     .btn-close:hover { background: var(--border); }
 
-    /* response sections in drawer */
     .resp-section { margin-bottom: 20px; }
     .resp-section-title {
       font-size: 10px; font-weight: 700; text-transform: uppercase;
       letter-spacing: .6px; color: var(--subtle);
-      margin-bottom: 8px; padding-bottom: 4px;
-      border-bottom: 1px solid var(--border);
+      margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid var(--border);
     }
     .resp-row {
-      display: flex; align-items: flex-start;
-      gap: 10px; padding: 7px 0;
-      border-bottom: 1px solid var(--border);
-      font-size: 12px;
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 12px;
     }
     .resp-row:last-child { border-bottom: none; }
     .resp-key { color: var(--subtle); flex: 0 0 180px; line-height: 1.4; }
     .resp-val { font-weight: 600; color: var(--text); }
     .resp-val.text-ans { font-weight: 400; color: #333; font-style: italic; }
 
-    /* Likert visual bar */
-    .likert-visual {
-      display: flex; align-items: center; gap: 6px; flex: 1;
-    }
-    .lv-bar {
-      height: 6px; border-radius: 3px;
-      background: var(--text);
-    }
+    .likert-visual { display: flex; align-items: center; gap: 6px; flex: 1; }
     .lv-num { font-size: 11px; font-weight: 700; color: var(--text); min-width: 14px; }
 
-    /* no data state */
-    .no-data-state {
-      text-align: center; padding: 48px 20px;
-      color: var(--subtle); font-size: 13px;
-    }
+    .no-data-state { text-align: center; padding: 48px 20px; color: var(--subtle); font-size: 13px; }
     .no-data-state strong { display: block; font-size: 16px; color: var(--text); margin-bottom: 6px; }
 
     @media (max-width: 640px) {
@@ -328,19 +316,19 @@
   </div>
 
   <div class="header-tabs">
-    <button class="tab-btn active" id="tab-monitor" onclick="switchTab('monitor')">Monitor</button>
-    <button class="tab-btn"        id="tab-respuestas" onclick="switchTab('respuestas')">Respuestas</button>
+    <button class="tab-btn active" id="tab-monitor"     onclick="switchTab('monitor')">Monitor</button>
+    <button class="tab-btn"        id="tab-respuestas"  onclick="switchTab('respuestas')">Respuestas</button>
   </div>
 
   <div class="server-dot">
-    <div class="dot" id="server-dot"></div>
+    <div class="hdot" id="server-dot"></div>
     <span id="server-txt">Conectado</span>
   </div>
 </header>
 
-<!-- ═══════════════════════════════════════
-     PANEL 1 — MONITOR EN TIEMPO REAL
-════════════════════════════════════════ -->
+<!-- ══════════════════════════════
+     PANEL MONITOR
+══════════════════════════════ -->
 <div class="panel active" id="panel-monitor">
 
   <div class="summary">
@@ -368,8 +356,16 @@
   </div>
 
   <div class="actions-row">
-    <span style="font-size:11px;color:var(--subtle);font-weight:600;text-transform:uppercase;letter-spacing:.4px">Acciones:</span>
-    <button class="btn btn-danger" onclick="finalizarExamen()">⏹ Finalizar examen</button>
+    <!-- Palanca evento -->
+    <div class="evento-toggle" id="evento-toggle" onclick="toggleEvento()">
+      <div class="toggle-track">
+        <div class="toggle-thumb"></div>
+      </div>
+      <div>
+        <div class="toggle-label" id="toggle-label">Evento cerrado</div>
+        <div class="toggle-sub"   id="toggle-sub">Los alumnos no pueden enviar</div>
+      </div>
+    </div>
     <div class="spacer"></div>
     <button class="btn" onclick="exportarCSV()">↓ Exportar CSV</button>
     <button class="btn" onclick="exportarJSON()">↓ Exportar JSON</button>
@@ -379,6 +375,7 @@
     <div class="table-header">
       <h2>Alumnos en evaluación</h2>
       <span class="count-badge" id="badge-count">0 alumnos</span>
+      <span class="evento-badge closed" id="evento-badge">Evento cerrado</span>
     </div>
     <table>
       <thead>
@@ -399,11 +396,10 @@
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════
-     PANEL 2 — RESPUESTAS
-════════════════════════════════════════ -->
+<!-- ══════════════════════════════
+     PANEL RESPUESTAS
+══════════════════════════════ -->
 <div class="panel" id="panel-respuestas">
-
   <div class="resp-toolbar">
     <input class="search-input" type="text" id="search-input"
            placeholder="Buscar por nombre o cédula…"
@@ -413,7 +409,6 @@
     <button class="btn" onclick="exportarCSV()">↓ CSV</button>
     <button class="btn" onclick="exportarJSON()">↓ JSON</button>
   </div>
-
   <div id="alumno-grid" class="alumno-grid">
     <div class="no-data-state">
       <strong>Sin respuestas aún</strong>
@@ -422,28 +417,32 @@
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════
-     DRAWER — DETALLE DE RESPUESTAS
-════════════════════════════════════════ -->
+<!-- ══════════════════════════════
+     DRAWER DETALLE
+══════════════════════════════ -->
 <div id="detail-overlay" onclick="cerrarDrawer(event)">
   <div id="detail-drawer">
     <div class="drawer-close">
       <h3 id="drawer-title">Respuestas</h3>
-      <button class="btn-close" onclick="cerrarDrawer(null, true)">✕</button>
+      <button class="btn-close" onclick="cerrarDrawer(null,true)">✕</button>
     </div>
     <div id="drawer-body"></div>
   </div>
 </div>
 
 <script>
-/* ── State ──────────────────────────────────────────── */
+/* ── State ── */
 const socket = io();
-let todosAlumnos = [];          // lista del monitor
-let todasRespuestas = [];       // respuestas guardadas
+let todosAlumnos    = [];
+let todasRespuestas = [];
+let eventoAbierto   = false;
 
-/* ── Socket setup ─────────────────────────────────── */
-socket.emit('join_admin');
-socket.on('connect',    () => setServerStatus(true));
+/* ── Socket ── */
+socket.on('connect', () => {
+  setServerStatus(true);
+  socket.emit('join_admin');
+  socket.emit('exportar_json');
+});
 socket.on('disconnect', () => setServerStatus(false));
 
 socket.on('estado_alumnos', (lista) => {
@@ -451,53 +450,76 @@ socket.on('estado_alumnos', (lista) => {
   renderMonitor(lista);
 });
 
+socket.on('evento_estado', ({ abierto }) => {
+  eventoAbierto = abierto;
+  actualizarToggle();
+});
+
 socket.on('respuestas_guardadas', (n) => {
   document.getElementById('cnt-enviados').textContent = n;
-  // Pedir el JSON completo para tener los datos
   socket.emit('exportar_json');
 });
 
 socket.on('json_listo', ({ data }) => {
   todasRespuestas = data;
-  renderRespuestas(todasRespuestas);
+  renderRespuestas(data);
   document.getElementById('resp-count-label').textContent =
     `${data.length} respuesta${data.length !== 1 ? 's' : ''}`;
 });
 
-socket.on('examen_estado', ({ finalizado }) => {
-  // Podría usarse para mostrar estado del examen
+socket.on('csv_listo', ({ csv }) => {
+  descargarBlob('\uFEFF' + csv, `evaluacion_${hoy()}.csv`, 'text/csv;charset=utf-8;');
 });
 
-socket.on('csv_listo', ({ csv, total }) => {
-  descargarCSV(csv, `evaluacion_${new Date().toISOString().slice(0,10)}.csv`);
-});
-
-/* Cargar respuestas al inicio */
-socket.on('connect', () => {
-  socket.emit('exportar_json');
-});
-
-/* ── Server status ─────────────────────────────────── */
+/* ── Server status ── */
 function setServerStatus(ok) {
   document.getElementById('server-dot').style.background = ok ? 'var(--ok)' : 'var(--danger)';
   document.getElementById('server-txt').textContent = ok ? 'Conectado' : 'Sin conexión';
 }
 
-/* ── Tab switch ────────────────────────────────────── */
+/* ── Tab switch ── */
 function switchTab(tab) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('panel-' + tab).classList.add('active');
-  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('tab-'   + tab).classList.add('active');
 }
 
-/* ══════════════════════════════════════════════════════
+/* ══════════════════════════════
+   PALANCA EVENTO
+══════════════════════════════ */
+function toggleEvento() {
+  socket.emit('set_evento', { abierto: !eventoAbierto });
+}
+
+function actualizarToggle() {
+  const toggle = document.getElementById('evento-toggle');
+  const label  = document.getElementById('toggle-label');
+  const sub    = document.getElementById('toggle-sub');
+  const badge  = document.getElementById('evento-badge');
+
+  if (eventoAbierto) {
+    toggle.classList.add('open');
+    label.textContent = 'Evento abierto';
+    sub.textContent   = 'Los alumnos pueden enviar respuestas';
+    badge.textContent = 'Evento abierto';
+    badge.className   = 'evento-badge open';
+  } else {
+    toggle.classList.remove('open');
+    label.textContent = 'Evento cerrado';
+    sub.textContent   = 'Los alumnos no pueden enviar';
+    badge.textContent = 'Evento cerrado';
+    badge.className   = 'evento-badge closed';
+  }
+}
+
+/* ══════════════════════════════
    MONITOR
-══════════════════════════════════════════════════════ */
+══════════════════════════════ */
 function renderMonitor(lista) {
   const tbody = document.getElementById('tbody');
 
-  if (lista.length === 0) {
+  if (!lista.length) {
     tbody.innerHTML = `<tr id="empty-row"><td colspan="5">Esperando que los alumnos ingresen…</td></tr>`;
     document.getElementById('badge-count').textContent = '0 alumnos';
     actualizarSummary(lista);
@@ -515,13 +537,13 @@ function renderMonitor(lista) {
     if (tieneAlerta) tr.classList.add('alerta-row');
 
     let pillClass, pillLabel;
-    if (!a.activo)            { pillClass = 'danger'; pillLabel = 'Inactivo'; }
+    if (!a.activo)             { pillClass = 'danger'; pillLabel = 'Inactivo'; }
     else if (a.alertas.length) { pillClass = 'warn';   pillLabel = 'Con alerta'; }
     else                       { pillClass = 'ok';     pillLabel = 'Activo'; }
 
     const pct = a.progreso || 0;
     const tagsHtml = a.alertas.map(al => {
-      if (al === 'sin_heartbeat') return `<span class="tag heartbeat">Sin señal</span>`;
+      if (al === 'sin_heartbeat')  return `<span class="tag heartbeat">Sin señal</span>`;
       if (al === 'cambio_pestana') return `<span class="tag pestana">Cambió pestaña</span>`;
       return `<span class="tag">${al}</span>`;
     }).join('') || `<span style="color:var(--subtle);font-size:11px">—</span>`;
@@ -548,154 +570,94 @@ function renderMonitor(lista) {
 }
 
 function actualizarSummary(lista) {
-  const activos = lista.filter(a => a.activo).length;
+  const activos   = lista.filter(a => a.activo).length;
   const conAlerta = lista.filter(a => a.alertas.length > 0 || !a.activo).length;
   document.getElementById('cnt-total').textContent   = lista.length;
   document.getElementById('cnt-activos').textContent = activos;
   document.getElementById('cnt-alertas').textContent = conAlerta;
-
   const cardActivos = document.getElementById('card-activos');
   cardActivos.className = 'stat-card ' +
     (activos === lista.length && lista.length > 0 ? 'c-ok' : 'c-warn');
 }
 
 function actualizarAlertBanner(lista) {
-  const banner = document.getElementById('alert-banner');
+  const banner      = document.getElementById('alert-banner');
   const sospechosos = lista.filter(a => a.alertas.includes('cambio_pestana') || !a.activo);
-  if (sospechosos.length === 0) { banner.classList.remove('visible'); return; }
+  if (!sospechosos.length) { banner.classList.remove('visible'); return; }
   banner.classList.add('visible');
-  const nombres = sospechosos.map(a => a.nombre).join(', ');
   document.getElementById('alert-text').textContent =
-    `Actividad sospechosa detectada — ${nombres}`;
+    `Actividad sospechosa — ${sospechosos.map(a => a.nombre).join(', ')}`;
 }
 
-/* ── Acciones admin ──────────────────────────────── */
-function finalizarExamen() {
-  if (!confirm('¿Finalizar el examen para todos los alumnos?')) return;
-  socket.emit('finalizar_examen');
-}
-
-function exportarCSV() {
-  socket.emit('exportar_csv');
-}
-
+/* ── Exports ── */
+function exportarCSV()  { socket.emit('exportar_csv'); }
 function exportarJSON() {
   if (!todasRespuestas.length) { alert('No hay respuestas aún.'); return; }
-  const blob = new Blob([JSON.stringify(todasRespuestas, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `evaluacion_${new Date().toISOString().slice(0,10)}.json`;
-  a.click();
+  descargarBlob(JSON.stringify(todasRespuestas, null, 2),
+    `evaluacion_${hoy()}.json`, 'application/json');
 }
-
-function descargarCSV(csv, nombre) {
-  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+function descargarBlob(contenido, nombre, tipo) {
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+  a.href = URL.createObjectURL(new Blob([contenido], { type: tipo }));
   a.download = nombre;
   a.click();
 }
+function hoy() { return new Date().toISOString().slice(0,10); }
 
-/* ══════════════════════════════════════════════════════
-   RESPUESTAS PANEL
-══════════════════════════════════════════════════════ */
-
-/* Mapa de claves legibles */
+/* ══════════════════════════════
+   RESPUESTAS
+══════════════════════════════ */
 const LABELS = {
-  rendimiento_general:    'Rendimiento general',
-  frecuencia_estudio:     'Frecuencia de estudio',
-  nota_esperada:          'Nota esperada',
-  materia_dificil:        'Materia más difícil',
-  apoyo_extra:            'Necesita apoyo extra',
-  convivencia_general:    'Convivencia general',
-  respeto_compañeros:     'Respeto entre compañeros',
-  inclusion:              'Inclusión',
-  conflicto_compañeros:   'Conflictos con compañeros',
-  convivencia_positivo:   'Gesto positivo destacado',
-  convivencia_conflicto:  'Conflicto relatado',
-  comites_general:        'Comités en general',
-  comite_participacion:   'Participación en comité',
-  mesa_general:           'Mesa directiva en general',
-  cuota_al_dia:           'Al día con cuotas',
-  recursos_transparencia: 'Transparencia de recursos',
-  usa_emca:               'Usa emca.web.app',
-  emca_herramienta:       'Herramienta más usada de EMCA',
-  emca_sugerencia:        'Sugerencia para EMCA',
-  compromiso_curso:       'Compromiso con el curso',
-  compromisos_personales: 'Compromisos personales',
-  comentario_final:       'Comentario final',
+  rendimiento_general:'Rendimiento general', frecuencia_estudio:'Frecuencia de estudio',
+  nota_esperada:'Nota esperada', materia_dificil:'Materia más difícil',
+  apoyo_extra:'Necesita apoyo extra', convivencia_general:'Convivencia general',
+  respeto_compañeros:'Respeto entre compañeros', inclusion:'Inclusión',
+  conflicto_compañeros:'Conflictos', convivencia_positivo:'Gesto positivo',
+  convivencia_conflicto:'Conflicto relatado', comites_general:'Comités en general',
+  comite_participacion:'Participación en comité', mesa_general:'Mesa directiva general',
+  cuota_al_dia:'Al día con cuotas', recursos_transparencia:'Transparencia de recursos',
+  usa_emca:'Usa emca.web.app', emca_herramienta:'Herramienta más usada',
+  emca_sugerencia:'Sugerencia EMCA', compromiso_curso:'Compromiso con el curso',
+  compromisos_personales:'Compromisos personales', comentario_final:'Comentario final',
 };
 
-/* Grupos temáticos para el drawer */
 const GRUPOS = [
-  {
-    titulo: 'I — Rendimiento académico',
-    prefijos: ['rendimiento', 'frecuencia_estudio', 'nota_esperada', 'materia_', 'apoyo_extra'],
-  },
-  {
-    titulo: 'II — Convivencia',
-    prefijos: ['convivencia', 'respeto', 'inclusion', 'conflicto'],
-  },
-  {
-    titulo: 'III — Comités',
-    prefijos: ['comite'],
-  },
-  {
-    titulo: 'IV — Mesa directiva',
-    prefijos: ['mesa'],
-  },
-  {
-    titulo: 'V — Cuotas y recursos',
-    prefijos: ['cuota', 'recursos', 'usa_emca', 'emca'],
-  },
-  {
-    titulo: 'VI — Compromisos',
-    prefijos: ['compromiso'],
-  },
-  {
-    titulo: 'Materias',
-    prefijos: ['materia_'],
-  },
+  { titulo:'I — Rendimiento académico', prefijos:['rendimiento','frecuencia_estudio','nota_esperada','apoyo_extra'] },
+  { titulo:'I — Materias',              prefijos:['materia_'] },
+  { titulo:'II — Convivencia',          prefijos:['convivencia','respeto','inclusion','conflicto'] },
+  { titulo:'III — Comités',             prefijos:['comite','comites'] },
+  { titulo:'IV — Mesa directiva',       prefijos:['mesa'] },
+  { titulo:'V — Cuotas y recursos',     prefijos:['cuota','recursos','usa_emca','emca'] },
+  { titulo:'VI — Compromisos',          prefijos:['compromiso'] },
 ];
 
 function labelKey(k) {
   if (LABELS[k]) return LABELS[k];
-  // Dinámicos: materia_*, comite_*, mesa_*
-  if (k.startsWith('materia_'))  return 'Materia: ' + k.replace('materia_','').replace(/_/g,' ');
-  if (k.startsWith('comite_'))   return 'Comité: '  + k.replace('comite_','').replace(/_opinion/,' — opinión').replace(/_/g,' ');
-  if (k.startsWith('mesa_'))     return 'Mesa — '   + k.replace('mesa_','').replace(/_opinion/,' opinión').replace(/_/g,' ');
+  if (k.startsWith('materia_')) return 'Materia: ' + k.replace('materia_','').replace(/_/g,' ');
+  if (k.startsWith('comite_'))  return 'Comité: '  + k.replace('comite_','').replace(/_opinion/,' — opinión').replace(/_/g,' ');
+  if (k.startsWith('mesa_'))    return 'Mesa — '   + k.replace('mesa_','').replace(/_opinion/,' opinión').replace(/_/g,' ');
   return k.replace(/_/g,' ');
-}
-
-function isTexto(k, v) {
-  // Si el valor es un string largo o no numérico
-  if (typeof v === 'string' && !['si','no'].includes(v)) return true;
-  return false;
 }
 
 function renderRespuestas(lista) {
   const grid = document.getElementById('alumno-grid');
   if (!lista.length) {
-    grid.innerHTML = `<div class="no-data-state"><strong>Sin respuestas aún</strong>Los alumnos que completen la evaluación aparecerán aquí.</div>`;
+    grid.innerHTML = `<div class="no-data-state"><strong>Sin respuestas aún</strong>Los alumnos que completen aparecerán aquí.</div>`;
     return;
   }
-
   grid.innerHTML = '';
-  lista.forEach((r, i) => {
+  lista.forEach(r => {
     const card = document.createElement('div');
     card.className = 'alumno-card';
     card.onclick = () => abrirDrawer(r);
-
-    const ts = r.timestamp ? new Date(r.timestamp).toLocaleString('es-PY', { timeStyle: 'short', dateStyle: 'short' }) : '—';
-
-    // Mini resumen: algunos valores clave
+    const ts = r.timestamp
+      ? new Date(r.timestamp).toLocaleString('es-PY', { timeStyle:'short', dateStyle:'short' })
+      : '—';
     const clavesMini = ['rendimiento_general','convivencia_general','mesa_general','comites_general'];
-    const miniRows = clavesMini.map(k => {
-      const v = r.respuestas?.[k];
-      if (v == null) return null;
-      return `<div class="ac-mini-item">${labelKey(k)}: <strong>${v}</strong></div>`;
-    }).filter(Boolean).join('');
-
+    const miniRows = clavesMini
+      .filter(k => r.respuestas?.[k] != null)
+      .map(k => `<div class="ac-mini-item">${labelKey(k)}: <strong>${r.respuestas[k]}</strong></div>`)
+      .join('');
     card.innerHTML = `
       <div class="ac-header">
         <div>
@@ -705,41 +667,33 @@ function renderRespuestas(lista) {
         <div class="ac-ts">${ts}</div>
       </div>
       <div class="ac-body">
-        ${miniRows
-          ? `<div class="ac-mini-grid">${miniRows}</div>`
-          : `<div class="ac-no-data">Ver respuestas →</div>`}
-      </div>
-    `;
+        ${miniRows ? `<div class="ac-mini-grid">${miniRows}</div>` : `<div class="ac-no-data">Ver respuestas →</div>`}
+      </div>`;
     grid.appendChild(card);
   });
 }
 
 function filtrarAlumnos(q) {
-  const term = q.toLowerCase().trim();
-  const filtrada = term
-    ? todasRespuestas.filter(r =>
-        r.nombre.toLowerCase().includes(term) ||
-        r.cedula.toLowerCase().includes(term))
-    : todasRespuestas;
-  renderRespuestas(filtrada);
+  const t = q.toLowerCase().trim();
+  renderRespuestas(t
+    ? todasRespuestas.filter(r => r.nombre.toLowerCase().includes(t) || r.cedula.toLowerCase().includes(t))
+    : todasRespuestas);
 }
 
-/* ── Drawer ────────────────────────────────────────── */
+/* ── Drawer ── */
 function abrirDrawer(r) {
   document.getElementById('drawer-title').textContent = r.nombre;
   const body = document.getElementById('drawer-body');
   body.innerHTML = '';
 
   if (!r.respuestas || !Object.keys(r.respuestas).length) {
-    body.innerHTML = `<div class="no-data-state"><strong>Sin datos</strong>Este alumno no tiene respuestas registradas.</div>`;
+    body.innerHTML = `<div class="no-data-state"><strong>Sin datos</strong></div>`;
     document.getElementById('detail-overlay').classList.add('open');
     return;
   }
 
-  // Meta
   const ts = r.timestamp
-    ? new Date(r.timestamp).toLocaleString('es-PY', { dateStyle:'long', timeStyle:'short' })
-    : '—';
+    ? new Date(r.timestamp).toLocaleString('es-PY', { dateStyle:'long', timeStyle:'short' }) : '—';
   body.innerHTML += `
     <div class="resp-section">
       <div class="resp-section-title">Identificación</div>
@@ -748,34 +702,25 @@ function abrirDrawer(r) {
       <div class="resp-row"><span class="resp-key">Enviado</span><span class="resp-val">${ts}</span></div>
     </div>`;
 
-  // Agrupar claves
   const claves = Object.keys(r.respuestas);
   const usadas = new Set();
 
   GRUPOS.forEach(grupo => {
-    const rows = claves.filter(k => {
-      if (usadas.has(k)) return false;
-      return grupo.prefijos.some(p => k.startsWith(p) || k === p);
-    });
+    const rows = claves.filter(k => !usadas.has(k) && grupo.prefijos.some(p => k.startsWith(p) || k === p));
     if (!rows.length) return;
     rows.forEach(k => usadas.add(k));
-
-    let html = `<div class="resp-section"><div class="resp-section-title">${grupo.titulo}</div>`;
-    rows.forEach(k => {
-      const v = r.respuestas[k];
-      html += renderRespRow(k, v);
-    });
-    html += '</div>';
-    body.innerHTML += html;
+    body.innerHTML += `<div class="resp-section">
+      <div class="resp-section-title">${grupo.titulo}</div>
+      ${rows.map(k => renderRespRow(k, r.respuestas[k])).join('')}
+    </div>`;
   });
 
-  // Resto sin grupo
   const resto = claves.filter(k => !usadas.has(k));
   if (resto.length) {
-    let html = `<div class="resp-section"><div class="resp-section-title">Otras respuestas</div>`;
-    resto.forEach(k => { html += renderRespRow(k, r.respuestas[k]); });
-    html += '</div>';
-    body.innerHTML += html;
+    body.innerHTML += `<div class="resp-section">
+      <div class="resp-section-title">Otras respuestas</div>
+      ${resto.map(k => renderRespRow(k, r.respuestas[k])).join('')}
+    </div>`;
   }
 
   document.getElementById('detail-overlay').classList.add('open');
@@ -783,31 +728,26 @@ function abrirDrawer(r) {
 
 function renderRespRow(k, v) {
   const label = labelKey(k);
-  if (isTexto(k, v)) {
-    return `
-      <div class="resp-row" style="flex-direction:column;align-items:flex-start;gap:4px">
-        <span class="resp-key">${label}</span>
-        <span class="resp-val text-ans">${v ? esc(String(v)) : '<em style="color:var(--subtle)">Sin respuesta</em>'}</span>
-      </div>`;
-  }
-  // Si es numérico 1-5: mostrar barra visual
-  if (typeof v === 'number' && v >= 1 && v <= 5) {
-    const w = (v / 5 * 100).toFixed(0);
-    return `
-      <div class="resp-row">
-        <span class="resp-key">${label}</span>
-        <div class="likert-visual">
-          <div class="lv-bar" style="width:${w}px;max-width:80px;height:6px;border-radius:3px;background:var(--text)"></div>
-          <span class="lv-num">${v}/5</span>
-        </div>
-      </div>`;
-  }
-  // Si/No u otro
-  return `
-    <div class="resp-row">
+  if (typeof v === 'string' && !['si','no'].includes(v)) {
+    return `<div class="resp-row" style="flex-direction:column;align-items:flex-start;gap:4px">
       <span class="resp-key">${label}</span>
-      <span class="resp-val">${esc(String(v))}</span>
+      <span class="resp-val text-ans">${v ? esc(String(v)) : '<em style="color:var(--subtle)">Sin respuesta</em>'}</span>
     </div>`;
+  }
+  if (typeof v === 'number' && v >= 1 && v <= 5) {
+    const w = (v / 5 * 80).toFixed(0);
+    return `<div class="resp-row">
+      <span class="resp-key">${label}</span>
+      <div class="likert-visual">
+        <div style="width:${w}px;height:6px;border-radius:3px;background:var(--text)"></div>
+        <span class="lv-num">${v}/5</span>
+      </div>
+    </div>`;
+  }
+  return `<div class="resp-row">
+    <span class="resp-key">${label}</span>
+    <span class="resp-val">${esc(String(v))}</span>
+  </div>`;
 }
 
 function cerrarDrawer(event, force) {
@@ -816,11 +756,8 @@ function cerrarDrawer(event, force) {
   }
 }
 
-/* ── Utils ─────────────────────────────────────────── */
 function esc(str) {
-  return String(str)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 </script>
 </body>
